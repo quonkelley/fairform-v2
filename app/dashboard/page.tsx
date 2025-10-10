@@ -1,15 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { LogOut, Plus } from "lucide-react";
 
-import Link from "next/link";
-import { LogOut } from "lucide-react";
-
-import { ProtectedRoute } from "@/components/auth/protected-route";
 import { useAuth } from "@/components/auth/auth-context";
+import { ProtectedRoute } from "@/components/auth/protected-route";
+import { CaseCard } from "@/components/dashboard/case-card";
+import { DashboardLayout } from "@/components/dashboard/dashboard-layout";
+import { EmptyState } from "@/components/dashboard/empty-state";
+import { StartCaseDialog } from "@/components/dashboard/start-case-dialog";
+import { Spinner } from "@/components/feedback/spinner";
+import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { type CaseRecord } from "@/lib/db/casesRepo";
+import { useUserCases } from "@/lib/hooks/useUserCases";
 
-export default function DashboardPlaceholder() {
+export default function DashboardPage() {
   const { user, signOutUser } = useAuth();
   const [signingOut, setSigningOut] = useState(false);
 
@@ -22,52 +28,158 @@ export default function DashboardPlaceholder() {
     }
   };
 
+  if (!user) {
+    return null;
+  }
+
   return (
     <ProtectedRoute>
-      <div className="mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-8 px-6 py-16">
-        <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="space-y-1.5">
-            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-primary">
-              Dashboard preview
-            </p>
-            <h1 className="text-3xl font-semibold text-foreground">
-              Welcome back{user?.displayName ? `, ${user.displayName}` : ""}!
-            </h1>
-            <p className="text-base text-muted-foreground">
-              Sprint 1 will deliver authenticated access, case creation, and a
-              visual journey map. This placeholder confirms routing, guardrails,
-              and design tokens are in place after authentication.
-            </p>
-          </div>
-          <Button
-            variant="ghost"
-            onClick={handleSignOut}
-            disabled={signingOut}
-            className="w-full gap-2 sm:w-auto"
-          >
-            <LogOut className="h-4 w-4" aria-hidden="true" />
-            {signingOut ? "Signing out…" : "Sign out"}
-          </Button>
-        </header>
-
-        <section className="rounded-lg border border-dashed border-border bg-card/60 p-6 text-sm text-muted-foreground">
-          <p className="font-medium text-foreground">
-            What&apos;s coming in Sprint 1
-          </p>
-          <ul className="mt-3 space-y-2">
-            <li>• Case listing with inline creation modal.</li>
-            <li>• Progress indicators that sync with the Case Journey Map.</li>
-            <li>• Glossary access and upcoming hearing reminders.</li>
-          </ul>
-          <p className="mt-4">
-            Until those features ship, explore the{" "}
-            <Link href="/docs" className="font-medium text-primary underline">
-              product documentation
-            </Link>{" "}
-            or return to the home screen.
-          </p>
-        </section>
-      </div>
+      <DashboardContent
+        userId={user.uid}
+        userName={user.displayName ?? undefined}
+        onSignOut={handleSignOut}
+        signingOut={signingOut}
+      />
     </ProtectedRoute>
   );
+}
+
+type DashboardContentProps = {
+  userId: string;
+  userName?: string;
+  onSignOut: () => Promise<void>;
+  signingOut: boolean;
+};
+
+export function DashboardContent({
+  userId,
+  userName,
+  onSignOut,
+  signingOut,
+}: DashboardContentProps) {
+  const [isDialogOpen, setDialogOpen] = useState(false);
+  const [flashMessage, setFlashMessage] = useState<string | null>(null);
+  const casesQuery = useUserCases(userId);
+
+  const cases = useMemo(
+    () => (casesQuery.data ?? []).slice().sort(sortByCreatedDate),
+    [casesQuery.data],
+  );
+
+  const handleStartCaseClick = () => {
+    setDialogOpen(true);
+  };
+
+  const handleCaseCreated = () => {
+    setFlashMessage("Case created successfully.");
+  };
+
+  const handleDismissFlash = () => setFlashMessage(null);
+
+  return (
+    <>
+      <DashboardLayout
+        eyebrow="Dashboard"
+        title={`Welcome back${userName ? `, ${userName}` : ""}!`}
+        description="Review your cases, jump back into the next step, or start a new case when you're ready."
+        actions={
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <Button
+              type="button"
+              onClick={handleStartCaseClick}
+              className="gap-2"
+            >
+              <Plus className="h-4 w-4" aria-hidden="true" />
+              Start new case
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onSignOut}
+              disabled={signingOut}
+              className="gap-2"
+            >
+              <LogOut className="h-4 w-4" aria-hidden="true" />
+              {signingOut ? "Signing out…" : "Sign out"}
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-6">
+          {flashMessage ? (
+            <Alert
+              variant="success"
+              title="All set"
+              className="flex items-start justify-between gap-4"
+            >
+              <div>{flashMessage}</div>
+              <button
+                type="button"
+                onClick={handleDismissFlash}
+                className="text-sm font-medium text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                Dismiss
+              </button>
+            </Alert>
+          ) : null}
+
+          {casesQuery.isLoading ? (
+            <LoadingState />
+          ) : casesQuery.isError ? (
+            <Alert variant="destructive" title="We can’t load your cases">
+              <p className="mb-3">
+                {casesQuery.error?.message ??
+                  "An unexpected error occurred while loading your cases."}
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => casesQuery.refetch()}
+              >
+                Try again
+              </Button>
+            </Alert>
+          ) : cases.length === 0 ? (
+            <EmptyState onCreateCase={handleStartCaseClick} />
+          ) : (
+            <section aria-label="Your cases">
+              <div className="grid gap-6 sm:grid-cols-2">
+                {cases.map((item) => (
+                  <CaseCard key={item.id} record={item} />
+                ))}
+              </div>
+            </section>
+          )}
+        </div>
+      </DashboardLayout>
+
+      <StartCaseDialog
+        open={isDialogOpen}
+        onOpenChange={setDialogOpen}
+        userId={userId}
+        onSuccess={handleCaseCreated}
+      />
+    </>
+  );
+}
+
+function LoadingState() {
+  return (
+    <div
+      aria-busy="true"
+      aria-live="polite"
+      className="rounded-2xl border border-border bg-card/60 p-10 text-center"
+    >
+      <div className="flex flex-col items-center gap-4">
+        <Spinner label="Loading your cases" />
+        <p className="text-sm text-muted-foreground">
+          Fetching the latest cases…
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function sortByCreatedDate(a: CaseRecord, b: CaseRecord) {
+  return b.createdAt.getTime() - a.createdAt.getTime();
 }

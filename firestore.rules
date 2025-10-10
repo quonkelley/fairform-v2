@@ -1,0 +1,40 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Users can only read/write their own user document
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Cases can only be accessed by their owner
+    match /cases/{caseId} {
+      allow read, write: if request.auth != null && 
+        request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null && 
+        request.auth.uid == request.resource.data.userId;
+    }
+    
+    // Case steps can only be accessed by the owner of the parent case
+    match /caseSteps/{stepId} {
+      allow read, write: if request.auth != null && 
+        request.auth.uid == get(/databases/$(database)/documents/cases/$(resource.data.caseId)).data.userId;
+      allow create: if request.auth != null && 
+        request.auth.uid == get(/databases/$(database)/documents/cases/$(request.resource.data.caseId)).data.userId;
+    }
+    
+    // Reminders can only be accessed by their owner
+    match /reminders/{reminderId} {
+      allow read, write: if request.auth != null && 
+        request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null && 
+        request.auth.uid == request.resource.data.userId;
+    }
+    
+    // Glossary is read-only for all authenticated users
+    match /glossary/{termId} {
+      allow read: if request.auth != null;
+      allow write: if false; // No writes allowed to glossary
+    }
+  }
+}

@@ -1,0 +1,141 @@
+{
+  "info": {
+    "name": "FairForm API Collection",
+    "description": "API endpoints for FairForm case management system",
+    "version": "1.0.0"
+  },
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/health",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "health"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "List Cases",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/cases",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "cases"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Create Case",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"caseType\": \"eviction\",\n  \"jurisdiction\": \"marion_in\",\n  \"title\": \"Eviction Case - 123 Main St\",\n  \"notes\": \"Initial case setup\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/cases",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "cases"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get Case Steps",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/cases/{{caseId}}/steps",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "cases", "{{caseId}}", "steps"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Update Step Completion",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"isComplete\": true\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/steps/{{stepId}}/complete",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "steps", "{{stepId}}", "complete"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Create Reminder",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"caseId\": \"{{caseId}}\",\n  \"dueDate\": \"2025-12-31T23:59:59.000Z\",\n  \"channel\": \"email\",\n  \"message\": \"Reminder: Your case deadline is approaching\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/reminders",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "reminders"]
+        }
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "caseId",
+      "value": "your-case-id-here",
+      "type": "string"
+    },
+    {
+      "key": "stepId",
+      "value": "your-step-id-here",
+      "type": "string"
+    }
+  ]
+}

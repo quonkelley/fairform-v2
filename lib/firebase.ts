@@ -1,10 +1,11 @@
-import { initializeApp, getApps, getApp } from "firebase/app";
+import { initializeApp, getApps, getApp, type FirebaseApp } from "firebase/app";
 import {
   browserLocalPersistence,
   getAuth,
   setPersistence,
   type Auth,
 } from "firebase/auth";
+import { getFirestore, type Firestore } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -29,9 +30,10 @@ function createFirebaseApp() {
   return initializeApp(firebaseConfig);
 }
 
-const firebaseApp = !getApps().length ? createFirebaseApp() : getApp();
+const firebaseApp: FirebaseApp = !getApps().length ? createFirebaseApp() : getApp();
 
 let authInstance: Auth | null = null;
+let firestoreInstance: Firestore | null = null;
 
 export function getFirebaseAuth(): Auth {
   if (authInstance) {
@@ -48,3 +50,11 @@ export function getFirebaseAuth(): Auth {
   return authInstance;
 }
 
+export function getFirestoreDb(): Firestore {
+  if (firestoreInstance) {
+    return firestoreInstance;
+  }
+
+  firestoreInstance = getFirestore(firebaseApp);
+  return firestoreInstance;
+}

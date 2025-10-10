@@ -1,0 +1,53 @@
+schema: 1
+story: '3.1'
+story_title: 'Design System Foundations'
+gate: CONCERNS
+status_reason: 'Design system implementation is comprehensive and well-documented, but test failures need to be addressed before completion.'
+reviewer: 'Quinn (Test Architect)'
+updated: '2025-01-12T16:45:00Z'
+top_issues:
+  - id: 'TEST-001'
+    severity: medium
+    finding: '4 failing tests in form component test suite'
+    suggested_action: 'Fix form component test failures including submission parameters, validation tests, and element selection issues'
+  - id: 'TEST-002'
+    severity: medium
+    finding: '3 failing tests in database repository tests'
+    suggested_action: 'Review and fix repository test failures for cases, steps, and reminders'
+waiver: { active: false }
+
+# Extended quality metrics
+quality_score: 80
+expires: '2025-01-26T16:45:00Z'
+
+evidence:
+  tests_reviewed: 58
+  tests_failing: 7
+  risks_identified: 2
+  trace:
+    ac_covered: [1, 2, 3, 4, 5, 6, 7]
+    ac_gaps: []
+
+nfr_validation:
+  security:
+    status: PASS
+    notes: 'No security concerns - standard React patterns, proper form validation'
+  performance:
+    status: PASS
+    notes: 'Excellent performance - tree-shakable components, efficient CSS-in-JS'
+  reliability:
+    status: CONCERNS
+    notes: 'Test failures indicate potential reliability issues that need investigation'
+  maintainability:
+    status: CONCERNS
+    notes: 'Test suite has failures that need resolution for proper maintainability'
+
+recommendations:
+  immediate:
+    - action: 'Fix form component test failures'
+      refs: ['tests/components/ui/form.test.tsx']
+    - action: 'Fix database repository test failures'
+      refs: ['tests/lib/db/casesRepo.test.ts', 'tests/lib/db/stepsRepo.test.ts', 'tests/lib/db/remindersRepo.test.ts']
+  future:
+    - action: 'Add more robust test error handling'
+      refs: ['tests/']
