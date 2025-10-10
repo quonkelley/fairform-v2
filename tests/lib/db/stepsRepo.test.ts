@@ -65,6 +65,7 @@ describe("StepsRepository", () => {
       const mockDocRef = { id: "step123" };
       const mockSnapshot = {
         exists: () => true,
+        id: "step123",
         data: () => ({
           caseId: "case123",
           name: "File appearance",
