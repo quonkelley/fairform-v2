@@ -86,6 +86,7 @@ export async function createCase(input: CreateCaseInput & { userId: string }): P
       // Fallback for eventual consistency: synthesize a record
       return {
         id: docRef.id,
+        userId: input.userId,
         title: input.title,
         caseType: input.caseType,
         jurisdiction: input.jurisdiction,
@@ -119,6 +120,7 @@ function mapCaseDocument(
   }
   return {
     id: snapshot.id,
+    userId: String(data.userId ?? ""),
     title: typeof data.title === "string" && data.title.trim().length
       ? data.title
       : formatCaseTitle(data.caseType, data.jurisdiction),

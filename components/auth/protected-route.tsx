@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 import { useAuth } from "./auth-context";
 import { Spinner } from "../feedback/spinner";
@@ -17,27 +17,29 @@ export function ProtectedRoute({
 }: ProtectedRouteProps) {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const hasRedirected = useRef(false);
 
   useEffect(() => {
-    if (!loading && !user) {
+    // Only redirect once when loading is complete and there's no user
+    if (!loading && !user && !hasRedirected.current) {
+      hasRedirected.current = true;
       router.replace(redirectTo);
     }
   }, [loading, redirectTo, router, user]);
 
+  // Show loading spinner while checking auth
   if (loading) {
     return (
-      <div className="flex min-h-[50vh] items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center">
         <Spinner label="Loading your workspace" />
       </div>
     );
   }
 
+  // Don't render anything if user is not authenticated
+  // The redirect will happen via the useEffect
   if (!user) {
-    return (
-      <div className="flex min-h-[50vh] items-center justify-center">
-        <Spinner label="Redirecting to login…" />
-      </div>
-    );
+    return null;
   }
 
   return <>{children}</>;

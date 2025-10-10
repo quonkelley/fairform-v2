@@ -1,25 +1,29 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi } from "vitest";
+import * as React from "react";
 
 import { StartCaseDialog } from "@/components/dashboard/start-case-dialog";
 import type { CreateCaseFormInput } from "@/lib/hooks/useCreateCase";
 
 vi.mock("@/components/ui/select", () => {
-  const React = require("react");
-  const SelectContext = React.createContext<{
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const React = require("react") as typeof import("react");
+
+  type SelectContextValue = {
     value: string | undefined;
     onValueChange: ((value: string) => void) | undefined;
     options: Array<{ value: string; label: string }>;
     setOptions: React.Dispatch<
       React.SetStateAction<Array<{ value: string; label: string }>>
     >;
-  } | null>(null);
+  };
 
+  const SelectContext = React.createContext<SelectContextValue | null>(null);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const Select = ({ value, onValueChange, children }: any) => {
-    const [options, setOptions] = React.useState<
-      Array<{ value: string; label: string }>
-    >([]);
+    const [options, setOptions] = React.useState<Array<{ value: string; label: string }>>([]);
     const contextValue = React.useMemo(
       () => ({ value, onValueChange, options, setOptions }),
       [value, onValueChange, options],
@@ -31,10 +35,8 @@ vi.mock("@/components/ui/select", () => {
     );
   };
 
-  const SelectTrigger = React.forwardRef<
-    HTMLSelectElement,
-    React.SelectHTMLAttributes<HTMLSelectElement>
-  >((props, ref) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const SelectTrigger = React.forwardRef<any, any>((props: any, ref: any) => {
     const ctx = React.useContext(SelectContext);
     return (
       <select
@@ -46,7 +48,7 @@ vi.mock("@/components/ui/select", () => {
         <option value="" disabled>
           Select an option
         </option>
-        {ctx?.options.map((option) => (
+        {ctx?.options.map((option: { value: string; label: string }) => (
           <option key={option.value} value={option.value}>
             {option.label}
           </option>
@@ -58,8 +60,10 @@ vi.mock("@/components/ui/select", () => {
 
   const SelectValue = () => null;
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const SelectContent = ({ children }: any) => {
     const ctx = React.useContext(SelectContext);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const options = React.Children.toArray(children)
       .map((child: any) => {
         if (child?.props?.value) {
@@ -74,12 +78,14 @@ vi.mock("@/components/ui/select", () => {
     return null;
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const SelectItem = ({ value, children }: any) => (
     <option data-value={value}>{children}</option>
   );
 
   return {
     Select,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     SelectGroup: ({ children }: any) => <>{children}</>,
     SelectTrigger,
     SelectValue,
@@ -88,14 +94,12 @@ vi.mock("@/components/ui/select", () => {
     SelectSeparator: () => null,
     SelectScrollUpButton: () => null,
     SelectScrollDownButton: () => null,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     SelectLabel: ({ children }: any) => <optgroup label={children} />,
   };
 });
 
-const mutateAsync = vi.fn<
-  Promise<unknown>,
-  [CreateCaseFormInput]
->();
+const mutateAsync = vi.fn((input: CreateCaseFormInput): Promise<unknown> => Promise.resolve({}));
 const reset = vi.fn();
 
 vi.mock("@/lib/hooks/useCreateCase", () => ({

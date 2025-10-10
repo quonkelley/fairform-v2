@@ -47,8 +47,7 @@ const schema = z.object({
   notes: z
     .string()
     .max(240, "Keep notes brief (240 characters)")
-    .optional()
-    .transform((value) => (value ? value.trim() : undefined)),
+    .optional(),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -57,7 +56,7 @@ const DEFAULT_VALUES: FormValues = {
   title: "",
   caseType: "",
   jurisdiction: "",
-  notes: "",
+  notes: undefined,
 };
 
 const CASE_TYPE_OPTIONS = [

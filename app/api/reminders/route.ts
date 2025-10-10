@@ -15,10 +15,10 @@ export async function POST(request: NextRequest) {
     const validationResult = CreateReminderSchema.safeParse(body);
     if (!validationResult.success) {
       return NextResponse.json(
-        { 
-          error: "Validation error", 
+        {
+          error: "Validation error",
           message: "Invalid request data",
-          details: validationResult.error.errors 
+          details: validationResult.error.issues
         },
         { status: 400 }
       );

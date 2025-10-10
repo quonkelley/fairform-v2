@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
 
+import { useAuth } from "@/components/auth/auth-context";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -8,8 +11,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Spinner } from "@/components/feedback/spinner";
 
 export default function Home() {
+  const { user, loading } = useAuth();
+
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-12 px-6 py-16 sm:px-10 lg:px-12">
@@ -22,18 +28,29 @@ export default function Home() {
             courts with clarity.
           </h1>
           <p className="max-w-2xl text-lg text-muted-foreground">
-            This MVP lays the groundwork for authentication, the case dashboard,
-            and the procedural journey map. As we build, we will align every
-            screen with the compassionate design system documented in the FairForm
-            PRD and specification.
+            Track your case journey, understand court procedures, and navigate
+            the legal system with confidence. FairForm provides step-by-step
+            guidance tailored to your specific case type and jurisdiction.
           </p>
           <div className="flex flex-wrap gap-4">
-            <Button asChild>
-              <Link href="/dashboard">View Planned Dashboard</Link>
-            </Button>
-            <Button variant="ghost" asChild>
-              <Link href="/docs">Review Product Docs</Link>
-            </Button>
+            {loading ? (
+              <div className="flex items-center gap-2">
+                <Spinner label="" />
+              </div>
+            ) : user ? (
+              <Button asChild>
+                <Link href="/dashboard">Go to Dashboard</Link>
+              </Button>
+            ) : (
+              <>
+                <Button asChild>
+                  <Link href="/signup">Get Started</Link>
+                </Button>
+                <Button variant="outline" asChild>
+                  <Link href="/login">Sign In</Link>
+                </Button>
+              </>
+            )}
           </div>
         </div>
 

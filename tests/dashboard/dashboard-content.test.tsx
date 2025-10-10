@@ -3,7 +3,7 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi } from "vitest";
 
-import { DashboardContent } from "@/app/dashboard/page";
+import { DashboardContent } from "@/components/dashboard/dashboard-content";
 import type { CaseRecord } from "@/lib/db/casesRepo";
 import { listByUser } from "@/lib/db/casesRepo";
 
@@ -50,6 +50,7 @@ const listByUserMock = vi.mocked(listByUser);
 function createCase(overrides: Partial<CaseRecord> = {}): CaseRecord {
   const base: CaseRecord = {
     id: "case-1",
+    userId: "user-1",
     title: "Johnson eviction",
     caseType: "eviction",
     jurisdiction: "marion_in",
