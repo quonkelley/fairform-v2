@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { updateStepCompletion, getStep } from "@/lib/db/stepsRepo";
-import { getCase } from "@/lib/db/casesRepo";
+import { getCase, calculateCaseProgress } from "@/lib/db/casesRepo";
 import { UpdateStepCompletionSchema } from "@/lib/validation";
 import { requireAuth } from "@/lib/auth/server-auth";
 
@@ -51,6 +51,17 @@ export async function PATCH(
     }
 
     const updatedStep = await updateStepCompletion(stepId, updateData);
+    
+    // Calculate and update case progress after step completion
+    try {
+      await calculateCaseProgress(step.caseId);
+    } catch (progressError) {
+      // Log error but don't fail the request - step completion succeeded
+      console.error("Failed to update case progress", {
+        caseId: step.caseId,
+        error: progressError,
+      });
+    }
     
     return NextResponse.json({ success: true, step: updatedStep }, { status: 200 });
   } catch (error) {

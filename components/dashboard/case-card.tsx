@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 
 import { type CaseRecord } from "@/lib/db/casesRepo";
+import { Progress } from "@/components/ui/progress";
 
 type CaseCardProps = {
   record: CaseRecord;
@@ -48,11 +49,29 @@ export function CaseCard({ record }: CaseCardProps) {
           <dt className="font-medium text-foreground">Jurisdiction</dt>
           <dd>{formatJurisdiction(record.jurisdiction)}</dd>
         </div>
-        <div>
-          <dt className="font-medium text-foreground">Progress</dt>
-          <dd>{Math.round(record.progressPct)}%</dd>
-        </div>
       </dl>
+
+      {/* Progress Section */}
+      {(record.totalSteps !== undefined && record.totalSteps > 0) ? (
+        <div className="mt-4 space-y-2">
+          <Progress 
+            value={record.progressPct || 0}
+            aria-label="Case progress"
+            aria-valuenow={record.progressPct || 0}
+            aria-valuemin={0}
+            aria-valuemax={100}
+          />
+          <p className="text-xs text-muted-foreground">
+            {record.completedSteps || 0} of {record.totalSteps} steps complete
+          </p>
+        </div>
+      ) : (
+        <div className="mt-4">
+          <p className="text-xs text-muted-foreground">
+            No steps defined for this case
+          </p>
+        </div>
+      )}
     </Link>
   );
 }

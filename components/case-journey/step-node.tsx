@@ -1,11 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import { CheckCircle2, Circle, Clock } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { CaseStep } from "@/lib/validation";
 import { useCompleteStep } from "@/lib/hooks/useCompleteStep";
+import { StepDetailModal } from "./step-detail-modal";
 
 export interface StepNodeProps {
   step: CaseStep;
@@ -16,6 +18,7 @@ export interface StepNodeProps {
 export function StepNode({ step, index, totalSteps }: StepNodeProps) {
   const { id: stepId, caseId, name, order, dueDate, isComplete } = step;
   const completeStep = useCompleteStep();
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Determine if this is the current step (first incomplete step)
   const isCurrent = !isComplete && index === 0;
@@ -33,16 +36,23 @@ export function StepNode({ step, index, totalSteps }: StepNodeProps) {
     completeStep.mutate({ stepId, caseId });
   };
 
+  // Handle card click to open modal (only if not clicking the button)
+  const handleCardClick = () => {
+    setIsModalOpen(true);
+  };
+
   return (
-    <Card
-      className={cn(
-        "group transition-all",
-        isCompleted &&
-          "border-success/50 bg-success/5",
-        isCurrent && "border-primary bg-primary/5 ring-2 ring-primary/20",
-        isUpcoming && "border-border bg-card"
-      )}
-    >
+    <>
+      <Card
+        className={cn(
+          "group cursor-pointer transition-all hover:shadow-md",
+          isCompleted &&
+            "border-success/50 bg-success/5",
+          isCurrent && "border-primary bg-primary/5 ring-2 ring-primary/20",
+          isUpcoming && "border-border bg-card"
+        )}
+        onClick={handleCardClick}
+      >
       <div className="flex items-start gap-4 p-4">
         {/* Step Number Circle */}
         <div
@@ -136,6 +146,15 @@ export function StepNode({ step, index, totalSteps }: StepNodeProps) {
           )}
         </div>
       </div>
-    </Card>
+      </Card>
+
+      {/* Step Detail Modal */}
+      <StepDetailModal
+        step={step}
+        totalSteps={totalSteps}
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+      />
+    </>
   );
 }

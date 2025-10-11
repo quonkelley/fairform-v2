@@ -264,6 +264,11 @@ describe("useCompleteStep", () => {
       queryKey: ["caseSteps", "case456"],
     });
 
+    // Should also invalidate cases query for dashboard progress update
+    expect(invalidateSpy).toHaveBeenCalledWith({
+      queryKey: ["cases"],
+    });
+
     invalidateSpy.mockRestore();
   });
 

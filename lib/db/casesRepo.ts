@@ -8,6 +8,7 @@ import {
   query,
   serverTimestamp,
   Timestamp,
+  updateDoc,
   where,
   type DocumentData,
   type DocumentSnapshot,
@@ -16,6 +17,7 @@ import {
 
 import { getFirestoreDb } from "@/lib/firebase";
 import type { Case, CreateCaseInput, CaseStatus } from "@/lib/validation";
+import { listByCase as listStepsByCase } from "./stepsRepo";
 
 // Re-export types for backward compatibility
 export type { Case as CaseRecord, CreateCaseInput, CaseStatus };
@@ -75,6 +77,8 @@ export async function createCase(input: CreateCaseInput & { userId: string }): P
       jurisdiction: input.jurisdiction,
       status: "active" satisfies CaseStatus,
       progressPct: 0,
+      totalSteps: 0,
+      completedSteps: 0,
       notes: input.notes ?? null,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
@@ -92,6 +96,8 @@ export async function createCase(input: CreateCaseInput & { userId: string }): P
         jurisdiction: input.jurisdiction,
         status: "active",
         progressPct: 0,
+        totalSteps: 0,
+        completedSteps: 0,
         notes: input.notes ?? null,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -102,6 +108,48 @@ export async function createCase(input: CreateCaseInput & { userId: string }): P
   } catch (error) {
     console.error("Failed to create case", { input, error });
     throw new CasesRepositoryError("Unable to create case", { cause: error });
+  }
+}
+
+/**
+ * Calculate and update case progress based on completed steps
+ * @param caseId - The case ID to calculate progress for
+ * @returns Updated case with progress fields
+ */
+export async function calculateCaseProgress(caseId: string): Promise<Case> {
+  try {
+    // Fetch all steps for this case
+    const steps = await listStepsByCase(caseId);
+    
+    // Calculate progress
+    const totalSteps = steps.length;
+    const completedSteps = steps.filter(step => step.isComplete).length;
+    const progressPct = totalSteps > 0 
+      ? Math.round((completedSteps / totalSteps) * 100)
+      : 0;
+
+    // Update case document with calculated values
+    const db = getDb();
+    const caseRef = doc(db, COLLECTION_NAME, caseId);
+    await updateDoc(caseRef, {
+      progressPct,
+      totalSteps,
+      completedSteps,
+      updatedAt: serverTimestamp(),
+    });
+
+    // Fetch and return updated case
+    const updatedCase = await getCase(caseId);
+    if (!updatedCase) {
+      throw new CasesRepositoryError("Case not found after progress update", {
+        cause: { caseId },
+      });
+    }
+
+    return updatedCase;
+  } catch (error) {
+    console.error("Failed to calculate case progress", { caseId, error });
+    throw new CasesRepositoryError("Unable to calculate case progress", { cause: error });
   }
 }
 
@@ -128,6 +176,8 @@ function mapCaseDocument(
     jurisdiction: String(data.jurisdiction ?? "unknown"),
     status: (data.status ?? "active") as CaseStatus,
     progressPct: Number.isFinite(data.progressPct) ? data.progressPct : 0,
+    totalSteps: Number.isFinite(data.totalSteps) ? data.totalSteps : undefined,
+    completedSteps: Number.isFinite(data.completedSteps) ? data.completedSteps : undefined,
     notes:
       typeof data.notes === "string" && data.notes.trim().length
         ? data.notes

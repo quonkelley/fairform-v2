@@ -1,0 +1,210 @@
+# ============================================================
+# 🧪 FAIRFORM QA GATE – SPRINT 3: SMART INTAKE & PREP
+# ============================================================
+# Phase: 1.2 – Legal Navigator OS
+# Release: Smart Intake & Prep
+# Sprint: 3
+# Owner: Shaquon K. (Product)
+# Analyst: Mary (BMAD)
+# QA Lead: Quinn
+# Last Updated: 2025-10-10
+# ============================================================
+
+metadata:
+  release_name: "Smart Intake & Prep"
+  sprint_number: 3
+  phase: "1.2"
+  environment: "staging"
+  release_candidate: "v1.2.0-rc1"
+
+objectives:
+  - Verify AI Intake (Epic 12) end-to-end flow
+  - Confirm Day-in-Court Checklist (Epic 10) accessibility & persistence
+  - Validate User Settings (Epic 11) preference saving + AI opt-in gating
+  - Enforce compliance, accessibility, and data safety across modules
+
+# ------------------------------------------------------------
+# ✅ GLOBAL QA CRITERIA
+# ------------------------------------------------------------
+global_criteria:
+  accessibility: 
+    standard: "WCAG 2.1 AA"
+    target: "0 violations"
+    tools: ["jest-axe", "keyboard nav test"]
+  performance:
+    load_time: "<=1.5s on 3G mobile"
+    api_latency: "<=3s"
+    tools: ["Lighthouse", "Postman", "Chrome DevTools"]
+  testing:
+    unit_coverage: ">=85%"
+    integration_coverage: ">=80%"
+    test_suite: "pnpm test --coverage"
+  compliance:
+    - "AI disclaimers visible on all AI-enabled pages"
+    - "AI features disabled by default until opt-in"
+    - "No PII or raw input stored in aiIntakeLogs"
+  security:
+    - "Authenticated routes protected"
+    - "Firestore rules validated for users and aiIntakeLogs"
+  deployment:
+    - "All environment variables configured"
+    - "AI opt-in settings respected in staging"
+
+# ------------------------------------------------------------
+# 🧠 EPIC 12 – AI INTAKE VALIDATION
+# ------------------------------------------------------------
+epic_12_ai_intake:
+  routes:
+    - "/intake"
+    - "/api/ai/intake"
+  test_cases:
+    - id: 12.1
+      description: "AI Intake page respects user AI participation preference"
+      expected: "Redirect to /settings when AI opt-in is disabled"
+    - id: 12.2
+      description: "Moderation blocks unsafe content"
+      expected: "API returns 400 with safe message"
+    - id: 12.3
+      description: "Valid input returns structured JSON (caseType, jurisdiction, summary)"
+      expected: "JSON validated against IntakeResult schema"
+    - id: 12.4
+      description: "User can edit AI-generated summary before save"
+      expected: "Edits persist to Firestore 'cases' collection"
+    - id: 12.5
+      description: "Logs are anonymized (no PII in aiIntakeLogs)"
+      expected: "All string hashes validated; no plain text"
+  compliance_checks:
+    - "AI disclaimer displayed ('educational, not legal advice')"
+    - "User consent recorded (opt-in toggle checked)"
+  pass_gate: 
+    conditions:
+      - "All tests passing"
+      - "Disclaimers visible"
+      - "Opt-in enforced"
+      - "Moderation + schema validated"
+      - "Accessibility 0 violations"
+    owner: "QA Lead (Quinn)"
+
+# ------------------------------------------------------------
+# 🧾 EPIC 10 – DAY-IN-COURT CHECKLIST VALIDATION
+# ------------------------------------------------------------
+epic_10_checklist:
+  routes:
+    - "/cases/[id]/checklist"
+  test_cases:
+    - id: 10.1
+      description: "Checklist renders correct items for caseType"
+      expected: "Small Claims or Family Law variant displayed"
+    - id: 10.2
+      description: "Checklist progress persists via localStorage"
+      expected: "Checked items remain after refresh"
+    - id: 10.3
+      description: "Progress bar updates dynamically"
+      expected: "Visual completion matches checked count"
+    - id: 10.4
+      description: "Reset button clears local progress"
+      expected: "Checklist resets to 0%"
+  accessibility:
+    - "Keyboard navigation works (Tab, Enter)"
+    - "Screen readers announce task states (checked/unchecked)"
+  pass_gate:
+    conditions:
+      - "Checklist fully functional on mobile"
+      - "0 accessibility violations"
+      - "All progress states persist correctly"
+    owner: "QA Lead (Quinn)"
+
+# ------------------------------------------------------------
+# ⚙️ EPIC 11 – USER SETTINGS VALIDATION
+# ------------------------------------------------------------
+epic_11_user_settings:
+  routes:
+    - "/settings"
+  test_cases:
+    - id: 11.1
+      description: "Settings page loads user preferences"
+      expected: "User data fetched from Firestore"
+    - id: 11.2
+      description: "User can change and save time zone"
+      expected: "Firestore document updates successfully"
+    - id: 11.3
+      description: "AI participation toggle controls intake access"
+      expected: "Toggle off → /intake redirects to /settings"
+    - id: 11.4
+      description: "Save confirmation appears after update"
+      expected: "Success toast visible with no console errors"
+  compliance:
+    - "AI disclaimer link visible near toggle"
+  accessibility:
+    - "Form controls labeled"
+    - "Focus indicators visible"
+  pass_gate:
+    conditions:
+      - "Settings save & reload successfully"
+      - "AI toggle functional"
+      - "0 accessibility violations"
+    owner: "QA Lead (Quinn)"
+
+# ------------------------------------------------------------
+# 📊 INTEGRATION VALIDATION
+# ------------------------------------------------------------
+integration_tests:
+  - id: INT-01
+    description: "User with AI opt-in enabled completes intake and sees checklist populated"
+    expected: "Checklist variant auto-selected based on caseType"
+  - id: INT-02
+    description: "Disabling AI opt-in blocks intake access"
+    expected: "Redirect to /settings"
+  - id: INT-03
+    description: "Performance test: Intake API response time"
+    expected: "<=3 seconds average latency"
+  - id: INT-04
+    description: "End-to-end flow: Intake → Save Case → Checklist → Settings"
+    expected: "All data linked, no UI or data errors"
+
+# ------------------------------------------------------------
+# ✅ RELEASE APPROVAL CHECKLIST
+# ------------------------------------------------------------
+approval_gate:
+  qa_signoff:
+    - "All epic gates passed"
+    - "All integration tests passed"
+    - "No open critical bugs"
+  compliance_signoff:
+    - "Disclaimers visible on AI-enabled pages"
+    - "Opt-in gating confirmed"
+    - "Data retention policy verified"
+  performance_signoff:
+    - "Lighthouse score >= 90"
+    - "API response time <= 3s"
+  release_ready:
+    - "Staging environment stable"
+    - "AI opt-in setting verified in staging"
+    - "README and PRDs updated"
+  final_approvers:
+    - "Shaquon K. (Product)"
+    - "Sarah (PM)"
+    - "Quinn (QA Lead)"
+
+# ------------------------------------------------------------
+# 📦 ARTIFACTS TO ATTACH
+# ------------------------------------------------------------
+artifacts:
+  - "Test coverage report (HTML)"
+  - "Accessibility audit summary"
+  - "Compliance memo (AI Intake)"
+  - "Lighthouse performance report"
+  - "QA Signoff PDF"
+
+# ------------------------------------------------------------
+# 🏁 FINAL GATE STATUS
+# ------------------------------------------------------------
+status:
+  qa_gate: "PENDING"
+  compliance_gate: "PENDING"
+  release_ready: "BLOCKED (waiting for full test cycle)"
+  notes: "Expected QA review by Week 2 of Sprint 3"
+
+# ============================================================
+# END OF QA GATE DOCUMENT
+# ============================================================

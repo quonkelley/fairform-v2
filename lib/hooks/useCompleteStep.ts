@@ -67,6 +67,8 @@ export function useCompleteStep() {
     // Refetch on success to ensure data consistency
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["caseSteps", variables.caseId] });
+      // Invalidate cases query to update dashboard progress
+      queryClient.invalidateQueries({ queryKey: ["cases"] });
     },
   });
 }

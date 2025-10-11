@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { axe, toHaveNoViolations } from "jest-axe";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React from "react";
@@ -21,8 +21,14 @@ vi.mock("@/lib/hooks/useCompleteStep", () => ({
   useCompleteStep: vi.fn(),
 }));
 
+// Mock the StepDetailModal for StepNode tests
+vi.mock("@/components/case-journey/step-detail-modal", () => ({
+  StepDetailModal: () => null,
+}));
+
 import { useCaseSteps } from "@/lib/hooks/useCaseSteps";
 import { useCompleteStep } from "@/lib/hooks/useCompleteStep";
+import { StepDetailModal } from "@/components/case-journey/step-detail-modal";
 
 const mockUseCaseSteps = vi.mocked(useCaseSteps);
 const mockUseCompleteStep = vi.mocked(useCompleteStep);
@@ -314,4 +320,7 @@ describe("Case Journey - Accessibility", () => {
       expect(iconContainer).toBeTruthy();
     });
   });
+
+  // Note: StepDetailModal accessibility tests are in step-detail-modal.test.tsx
+  // This file focuses on CaseJourneyMap and StepNode accessibility
 });

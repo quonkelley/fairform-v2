@@ -12,6 +12,18 @@ vi.mock("@/lib/hooks/useCompleteStep", () => ({
   useCompleteStep: vi.fn(),
 }));
 
+// Mock the StepDetailModal component
+vi.mock("@/components/case-journey/step-detail-modal", () => ({
+  StepDetailModal: ({ isOpen, onClose, step, totalSteps }: any) =>
+    isOpen ? (
+      <div data-testid="step-detail-modal" role="dialog">
+        <button onClick={onClose} aria-label="Close">Close</button>
+        <div>Modal for {step.name}</div>
+        <div>Step {step.order} of {totalSteps}</div>
+      </div>
+    ) : null,
+}));
+
 import { useCompleteStep } from "@/lib/hooks/useCompleteStep";
 
 // Create wrapper for React Query
@@ -304,6 +316,105 @@ describe("StepNode", () => {
       // Button click should not propagate to parent
       expect(mockMutate).toHaveBeenCalled();
       // Parent handler should not be called due to stopPropagation
+    });
+  });
+
+  describe("Modal Integration", () => {
+    it("should not show modal initially", () => {
+      render(<StepNode step={baseStep} index={0} totalSteps={5} />, {
+        wrapper: createWrapper(),
+      });
+
+      const modal = screen.queryByTestId("step-detail-modal");
+      expect(modal).not.toBeInTheDocument();
+    });
+
+    it("should open modal when card is clicked", async () => {
+      const user = userEvent.setup();
+
+      const { container } = render(<StepNode step={baseStep} index={0} totalSteps={5} />, {
+        wrapper: createWrapper(),
+      });
+
+      // Find the card element
+      const card = container.querySelector('[class*="cursor-pointer"]');
+      if (!card) throw new Error("Card not found");
+      await user.click(card as HTMLElement);
+
+      // Modal should now be visible
+      const modal = screen.getByTestId("step-detail-modal");
+      expect(modal).toBeInTheDocument();
+      expect(screen.getByText("Modal for File Complaint")).toBeInTheDocument();
+    });
+
+
+    it("should close modal when close button is clicked", async () => {
+      const user = userEvent.setup();
+
+      const { container } = render(<StepNode step={baseStep} index={0} totalSteps={5} />, {
+        wrapper: createWrapper(),
+      });
+
+      // Open modal
+      const card = container.querySelector('[class*="cursor-pointer"]');
+      if (!card) throw new Error("Card not found");
+      await user.click(card as HTMLElement);
+
+      expect(screen.getByTestId("step-detail-modal")).toBeInTheDocument();
+
+      // Close modal
+      const closeButton = screen.getByLabelText("Close");
+      await user.click(closeButton);
+
+      expect(screen.queryByTestId("step-detail-modal")).not.toBeInTheDocument();
+    });
+
+    it("should pass correct props to StepDetailModal", async () => {
+      const user = userEvent.setup();
+
+      const { container } = render(<StepNode step={baseStep} index={0} totalSteps={5} />, {
+        wrapper: createWrapper(),
+      });
+
+      // Click the card
+      const card = container.querySelector('[class*="cursor-pointer"]');
+      if (!card) throw new Error("Card not found");
+      await user.click(card as HTMLElement);
+
+      // Check that modal receives correct step data
+      expect(screen.getByText("Modal for File Complaint")).toBeInTheDocument();
+      expect(screen.getByText("Step 1 of 5")).toBeInTheDocument();
+    });
+
+    it("should have cursor-pointer on card", () => {
+      const { container } = render(
+        <StepNode step={baseStep} index={0} totalSteps={5} />,
+        { wrapper: createWrapper() }
+      );
+
+      const card = container.querySelector('[class*="cursor-pointer"]');
+      expect(card).toBeInTheDocument();
+    });
+
+    it("should have hover effect on card", () => {
+      const { container } = render(
+        <StepNode step={baseStep} index={0} totalSteps={5} />,
+        { wrapper: createWrapper() }
+      );
+
+      const card = container.querySelector('[class*="hover:shadow"]');
+      expect(card).toBeInTheDocument();
+    });
+
+    it("should have cursor-pointer and clickable card", () => {
+      const { container } = render(
+        <StepNode step={baseStep} index={0} totalSteps={5} />,
+        { wrapper: createWrapper() }
+      );
+
+      // Card should be clickable via pointer
+      const card = container.querySelector('[class*="cursor-pointer"]');
+      expect(card).toBeInTheDocument();
     });
   });
 });

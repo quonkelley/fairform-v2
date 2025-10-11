@@ -36,5 +36,11 @@ service cloud.firestore {
       allow read: if request.auth != null;
       allow write: if false; // No writes allowed to glossary
     }
+
+    // AI intake logs restricted to admins only
+    match /aiIntakeLogs/{logId} {
+      allow read: if request.auth != null && request.auth.token.isAdmin == true;
+      allow write: if false;
+    }
   }
 }
