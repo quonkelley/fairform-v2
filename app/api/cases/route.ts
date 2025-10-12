@@ -26,13 +26,19 @@ export async function GET(request: NextRequest) {
 
 // POST /api/cases - Create a new case
 export async function POST(request: NextRequest) {
+  console.log("[POST /api/cases] Request received");
   try {
+    console.log("[POST /api/cases] Authenticating user...");
     const user = await requireAuth(request);
+    console.log("[POST /api/cases] User authenticated:", user.uid);
+
     const body = await request.json();
-    
+    console.log("[POST /api/cases] Request body:", body);
+
     // Validate request body
     const validationResult = CreateCaseSchema.safeParse(body);
     if (!validationResult.success) {
+      console.error("[POST /api/cases] Validation failed:", validationResult.error.issues);
       return NextResponse.json(
         {
           error: "Validation error",
@@ -44,22 +50,28 @@ export async function POST(request: NextRequest) {
     }
 
     const caseData = validationResult.data;
+    console.log("[POST /api/cases] Creating case with data:", caseData);
+
     const newCase = await createCase({
       ...caseData,
       userId: user.uid,
     });
 
+    console.log("[POST /api/cases] Case created successfully:", newCase.id);
+
     const response = CreateCaseResponseSchema.parse({
       caseId: newCase.id,
     });
 
+    console.log("[POST /api/cases] Sending response:", response);
     return NextResponse.json(response, { status: 201 });
   } catch (error) {
     if (error instanceof Error && error.message === "UNAUTHORIZED") {
+      console.error("[POST /api/cases] Unauthorized request");
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    
-    console.error("Failed to create case", error);
+
+    console.error("[POST /api/cases] Error creating case:", error);
     return NextResponse.json(
       { error: "Internal server error", message: "Unable to create case" },
       { status: 500 }

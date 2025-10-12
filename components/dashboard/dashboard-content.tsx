@@ -10,7 +10,7 @@ import { StartCaseDialog } from "@/components/dashboard/start-case-dialog";
 import { Spinner } from "@/components/feedback/spinner";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { type CaseRecord } from "@/lib/db/casesRepo";
+import { type CaseRecord } from "@/lib/db/types";
 import { useUserCases } from "@/lib/hooks/useUserCases";
 
 type DashboardContentProps = {

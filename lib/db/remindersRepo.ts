@@ -1,20 +1,11 @@
 import {
-  addDoc,
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  orderBy,
-  query,
-  serverTimestamp,
-  Timestamp,
-  where,
   type DocumentData,
   type DocumentSnapshot,
   type Firestore,
-} from "firebase/firestore";
+  FieldValue,
+} from "firebase-admin/firestore";
 
-import { getFirestoreDb } from "@/lib/firebase";
+import { getAdminFirestore } from "@/lib/firebase-admin";
 import type { Reminder, CreateReminderInput } from "@/lib/validation";
 
 export class RemindersRepositoryError extends Error {
@@ -29,22 +20,21 @@ const COLLECTION_NAME = "reminders";
 export async function createReminder(input: CreateReminderInput & { userId: string }): Promise<Reminder> {
   try {
     const db = getDb();
-    const remindersRef = collection(db, COLLECTION_NAME);
 
     const dueDate = new Date(input.dueDate);
-    const docRef = await addDoc(remindersRef, {
+    const docRef = await db.collection(COLLECTION_NAME).add({
       userId: input.userId,
       caseId: input.caseId,
       dueDate: dueDate,
       channel: input.channel,
       message: input.message || generateDefaultMessage(input.channel),
       sent: false,
-      createdAt: serverTimestamp(),
+      createdAt: FieldValue.serverTimestamp(),
     });
 
-    const persistedSnapshot = await getDoc(docRef);
+    const persistedSnapshot = await docRef.get();
 
-    if (!persistedSnapshot.exists()) {
+    if (!persistedSnapshot.exists) {
       // Fallback for eventual consistency: synthesize a record
       return {
         id: docRef.id,
@@ -68,13 +58,12 @@ export async function createReminder(input: CreateReminderInput & { userId: stri
 export async function listByUser(userId: string): Promise<Reminder[]> {
   try {
     const db = getDb();
-    const remindersQuery = query(
-      collection(db, COLLECTION_NAME),
-      where("userId", "==", userId),
-      orderBy("dueDate", "asc"),
-    );
+    const snapshot = await db
+      .collection(COLLECTION_NAME)
+      .where("userId", "==", userId)
+      .orderBy("dueDate", "asc")
+      .get();
 
-    const snapshot = await getDocs(remindersQuery);
     return snapshot.docs.map(mapReminderDocument);
   } catch (error) {
     console.error("Failed to list reminders for user", { userId, error });
@@ -86,14 +75,13 @@ export async function listPendingReminders(): Promise<Reminder[]> {
   try {
     const db = getDb();
     const now = new Date();
-    const remindersQuery = query(
-      collection(db, COLLECTION_NAME),
-      where("sent", "==", false),
-      where("dueDate", "<=", now),
-      orderBy("dueDate", "asc"),
-    );
+    const snapshot = await db
+      .collection(COLLECTION_NAME)
+      .where("sent", "==", false)
+      .where("dueDate", "<=", now)
+      .orderBy("dueDate", "asc")
+      .get();
 
-    const snapshot = await getDocs(remindersQuery);
     return snapshot.docs.map(mapReminderDocument);
   } catch (error) {
     console.error("Failed to list pending reminders", { error });
@@ -104,10 +92,9 @@ export async function listPendingReminders(): Promise<Reminder[]> {
 export async function getReminder(reminderId: string): Promise<Reminder | null> {
   try {
     const db = getDb();
-    const reminderRef = doc(db, COLLECTION_NAME, reminderId);
-    const snapshot = await getDoc(reminderRef);
+    const snapshot = await db.collection(COLLECTION_NAME).doc(reminderId).get();
 
-    if (!snapshot.exists()) {
+    if (!snapshot.exists) {
       return null;
     }
 
@@ -119,7 +106,7 @@ export async function getReminder(reminderId: string): Promise<Reminder | null> 
 }
 
 function getDb(): Firestore {
-  return getFirestoreDb();
+  return getAdminFirestore();
 }
 
 function mapReminderDocument(snapshot: DocumentSnapshot<DocumentData>): Reminder {
@@ -144,12 +131,17 @@ function mapReminderDocument(snapshot: DocumentSnapshot<DocumentData>): Reminder
 
 function resolveTimestamp(value: unknown): Date | null {
   if (!value) return null;
-  
-  if (value instanceof Timestamp) {
-    return value.toDate();
+
+  // Admin SDK Timestamp has toDate() method
+  if (value && typeof value === "object" && "toDate" in value && typeof value.toDate === "function") {
+    return (value as any).toDate();
   }
   if (value instanceof Date) {
     return value;
+  }
+  // Admin SDK Timestamp also has _seconds property
+  if (value && typeof value === "object" && "_seconds" in value) {
+    return new Date((value as any)._seconds * 1000);
   }
   if (typeof value === "number") {
     return new Date(value);

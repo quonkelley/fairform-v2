@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 
-import { type CaseRecord } from "@/lib/db/casesRepo";
+import { type CaseRecord } from "@/lib/db/types";
 import { Progress } from "@/components/ui/progress";
 
 type CaseCardProps = {
@@ -19,7 +19,7 @@ export function CaseCard({ record }: CaseCardProps) {
 
   return (
     <Link
-      href={`/case/${record.id}`}
+      href={`/cases/${record.id}`}
       className="group flex flex-col rounded-2xl border border-border bg-card p-6 shadow-card outline-none transition hover:-translate-y-0.5 hover:shadow-lg focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
       aria-label={`Open case ${record.title}`}
     >

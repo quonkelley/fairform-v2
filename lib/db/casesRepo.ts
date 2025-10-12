@@ -1,21 +1,11 @@
 import {
-  addDoc,
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  orderBy,
-  query,
-  serverTimestamp,
-  Timestamp,
-  updateDoc,
-  where,
   type DocumentData,
   type DocumentSnapshot,
   type Firestore,
-} from "firebase/firestore";
+  FieldValue,
+} from "firebase-admin/firestore";
 
-import { getFirestoreDb } from "@/lib/firebase";
+import { getAdminFirestore } from "@/lib/firebase-admin";
 import type { Case, CreateCaseInput, CaseStatus } from "@/lib/validation";
 import { listByCase as listStepsByCase } from "./stepsRepo";
 
@@ -34,14 +24,14 @@ const COLLECTION_NAME = "cases";
 export async function listByUser(userId: string): Promise<Case[]> {
   try {
     const db = getDb();
-    const casesQuery = query(
-      collection(db, COLLECTION_NAME),
-      where("userId", "==", userId),
-      orderBy("createdAt", "desc"),
-    );
+    const snapshot = await db
+      .collection(COLLECTION_NAME)
+      .where("userId", "==", userId)
+      .orderBy("createdAt", "desc")
+      .get();
 
-    const snapshot = await getDocs(casesQuery);
-    return snapshot.docs.map(mapCaseDocument);
+    const cases = snapshot.docs.map(mapCaseDocument);
+    return cases;
   } catch (error) {
     console.error("Failed to list cases for user", { userId, error });
     throw new CasesRepositoryError("Unable to load cases", { cause: error });
@@ -51,10 +41,9 @@ export async function listByUser(userId: string): Promise<Case[]> {
 export async function getCase(caseId: string): Promise<Case | null> {
   try {
     const db = getDb();
-    const caseRef = doc(db, COLLECTION_NAME, caseId);
-    const snapshot = await getDoc(caseRef);
+    const snapshot = await db.collection(COLLECTION_NAME).doc(caseId).get();
 
-    if (!snapshot.exists()) {
+    if (!snapshot.exists) {
       return null;
     }
 
@@ -68,9 +57,8 @@ export async function getCase(caseId: string): Promise<Case | null> {
 export async function createCase(input: CreateCaseInput & { userId: string }): Promise<Case> {
   try {
     const db = getDb();
-    const casesRef = collection(db, COLLECTION_NAME);
 
-    const docRef = await addDoc(casesRef, {
+    const docRef = await db.collection(COLLECTION_NAME).add({
       userId: input.userId,
       title: input.title,
       caseType: input.caseType,
@@ -80,13 +68,13 @@ export async function createCase(input: CreateCaseInput & { userId: string }): P
       totalSteps: 0,
       completedSteps: 0,
       notes: input.notes ?? null,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
+      createdAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
     });
 
-    const persistedSnapshot = await getDoc(docRef);
+    const persistedSnapshot = await docRef.get();
 
-    if (!persistedSnapshot.exists()) {
+    if (!persistedSnapshot.exists) {
       // Fallback for eventual consistency: synthesize a record
       return {
         id: docRef.id,
@@ -120,22 +108,21 @@ export async function calculateCaseProgress(caseId: string): Promise<Case> {
   try {
     // Fetch all steps for this case
     const steps = await listStepsByCase(caseId);
-    
+
     // Calculate progress
     const totalSteps = steps.length;
     const completedSteps = steps.filter(step => step.isComplete).length;
-    const progressPct = totalSteps > 0 
+    const progressPct = totalSteps > 0
       ? Math.round((completedSteps / totalSteps) * 100)
       : 0;
 
     // Update case document with calculated values
     const db = getDb();
-    const caseRef = doc(db, COLLECTION_NAME, caseId);
-    await updateDoc(caseRef, {
+    await db.collection(COLLECTION_NAME).doc(caseId).update({
       progressPct,
       totalSteps,
       completedSteps,
-      updatedAt: serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
     });
 
     // Fetch and return updated case
@@ -154,7 +141,7 @@ export async function calculateCaseProgress(caseId: string): Promise<Case> {
 }
 
 function getDb(): Firestore {
-  return getFirestoreDb();
+  return getAdminFirestore();
 }
 
 function mapCaseDocument(
@@ -188,11 +175,16 @@ function mapCaseDocument(
 }
 
 function resolveTimestamp(value: unknown): Date {
-  if (value instanceof Timestamp) {
-    return value.toDate();
+  // Admin SDK Timestamp has toDate() method
+  if (value && typeof value === "object" && "toDate" in value && typeof value.toDate === "function") {
+    return (value as any).toDate();
   }
   if (value instanceof Date) {
     return value;
+  }
+  // Admin SDK Timestamp also has _seconds property
+  if (value && typeof value === "object" && "_seconds" in value) {
+    return new Date((value as any)._seconds * 1000);
   }
   if (typeof value === "number") {
     return new Date(value);

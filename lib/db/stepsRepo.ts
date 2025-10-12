@@ -1,21 +1,11 @@
 import {
-  addDoc,
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  orderBy,
-  query,
-  serverTimestamp,
-  Timestamp,
-  updateDoc,
-  where,
   type DocumentData,
   type DocumentSnapshot,
   type Firestore,
-} from "firebase/firestore";
+  FieldValue,
+} from "firebase-admin/firestore";
 
-import { getFirestoreDb } from "@/lib/firebase";
+import { getAdminFirestore } from "@/lib/firebase-admin";
 import type { CaseStep, CreateCaseStepInput, UpdateStepCompletionInput } from "@/lib/validation";
 
 export class StepsRepositoryError extends Error {
@@ -30,14 +20,15 @@ const COLLECTION_NAME = "caseSteps";
 export async function listByCase(caseId: string): Promise<CaseStep[]> {
   try {
     const db = getDb();
-    const stepsQuery = query(
-      collection(db, COLLECTION_NAME),
-      where("caseId", "==", caseId),
-      orderBy("order", "asc"),
-    );
+    const snapshot = await db
+      .collection(COLLECTION_NAME)
+      .where("caseId", "==", caseId)
+      .get();
 
-    const snapshot = await getDocs(stepsQuery);
-    return snapshot.docs.map(mapStepDocument);
+    const steps = snapshot.docs.map(mapStepDocument);
+
+    // Sort in memory to avoid composite index requirement
+    return steps.sort((a, b) => a.order - b.order);
   } catch (error) {
     console.error("Failed to list steps for case", { caseId, error });
     throw new StepsRepositoryError("Unable to load case steps", { cause: error });
@@ -47,20 +38,19 @@ export async function listByCase(caseId: string): Promise<CaseStep[]> {
 export async function createStep(input: CreateCaseStepInput): Promise<CaseStep> {
   try {
     const db = getDb();
-    const stepsRef = collection(db, COLLECTION_NAME);
 
-    const docRef = await addDoc(stepsRef, {
+    const docRef = await db.collection(COLLECTION_NAME).add({
       caseId: input.caseId,
       name: input.name,
       order: input.order,
-      dueDate: input.dueDate ? serverTimestamp() : null,
+      dueDate: input.dueDate ? FieldValue.serverTimestamp() : null,
       isComplete: false,
       completedAt: null,
     });
 
-    const persistedSnapshot = await getDoc(docRef);
+    const persistedSnapshot = await docRef.get();
 
-    if (!persistedSnapshot.exists()) {
+    if (!persistedSnapshot.exists) {
       // Fallback for eventual consistency: synthesize a record
       return {
         id: docRef.id,
@@ -86,23 +76,22 @@ export async function updateStepCompletion(
 ): Promise<CaseStep> {
   try {
     const db = getDb();
-    const stepRef = doc(db, COLLECTION_NAME, stepId);
 
-    const updateData: Partial<DocumentData> = {
+    const updateData: any = {
       isComplete: input.isComplete,
-      updatedAt: serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
     };
 
     if (input.isComplete) {
-      updateData.completedAt = serverTimestamp();
+      updateData.completedAt = FieldValue.serverTimestamp();
     } else {
       updateData.completedAt = null;
     }
 
-    await updateDoc(stepRef, updateData);
+    await db.collection(COLLECTION_NAME).doc(stepId).update(updateData);
 
-    const updatedSnapshot = await getDoc(stepRef);
-    if (!updatedSnapshot.exists()) {
+    const updatedSnapshot = await db.collection(COLLECTION_NAME).doc(stepId).get();
+    if (!updatedSnapshot.exists) {
       throw new StepsRepositoryError("Step not found after update", {
         cause: { stepId },
       });
@@ -118,10 +107,9 @@ export async function updateStepCompletion(
 export async function getStep(stepId: string): Promise<CaseStep | null> {
   try {
     const db = getDb();
-    const stepRef = doc(db, COLLECTION_NAME, stepId);
-    const snapshot = await getDoc(stepRef);
+    const snapshot = await db.collection(COLLECTION_NAME).doc(stepId).get();
 
-    if (!snapshot.exists()) {
+    if (!snapshot.exists) {
       return null;
     }
 
@@ -133,7 +121,7 @@ export async function getStep(stepId: string): Promise<CaseStep | null> {
 }
 
 function getDb(): Firestore {
-  return getFirestoreDb();
+  return getAdminFirestore();
 }
 
 function mapStepDocument(snapshot: DocumentSnapshot<DocumentData>): CaseStep {
@@ -157,12 +145,17 @@ function mapStepDocument(snapshot: DocumentSnapshot<DocumentData>): CaseStep {
 
 function resolveTimestamp(value: unknown): Date | null {
   if (!value) return null;
-  
-  if (value instanceof Timestamp) {
-    return value.toDate();
+
+  // Admin SDK Timestamp has toDate() method
+  if (value && typeof value === "object" && "toDate" in value && typeof value.toDate === "function") {
+    return (value as any).toDate();
   }
   if (value instanceof Date) {
     return value;
+  }
+  // Admin SDK Timestamp also has _seconds property
+  if (value && typeof value === "object" && "_seconds" in value) {
+    return new Date((value as any)._seconds * 1000);
   }
   if (typeof value === "number") {
     return new Date(value);
