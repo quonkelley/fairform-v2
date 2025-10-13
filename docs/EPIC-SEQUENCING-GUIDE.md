@@ -108,14 +108,14 @@ This document provides the definitive reference for epic status, sequencing, and
 
 ---
 
-### Epic 6: Case Journey Map 🔄
-**Status:** In Progress (50% complete)  
+### Epic 6: Case Journey Map ✅
+**Status:** Complete  
 **Sprint:** Sprint 2  
 **Stories:**
 - 6.1 Case Journey Visual Timeline ✅ (Complete)
 - 6.2 Step Completion Logic ✅ (Complete)
-- 6.3 Step Detail Modal 📋 (Ready for dev)
-- 6.4 Dashboard Progress Sync 📋 (Ready for dev)
+- 6.3 Step Detail Modal ✅ (Complete)
+- 6.4 Dashboard Progress Sync ✅ (Complete)
 
 **Deliverables (Completed):**
 - Visual timeline component with step states
@@ -133,16 +133,16 @@ This document provides the definitive reference for epic status, sequencing, and
 
 ---
 
-### Epic 6.5: Case Detail V2 Enhancement 📋
-**Status:** Ready  
-**Sprint:** Sprint 3 (Immediate Priority)  
+### Epic 6.5: Case Detail V2 Enhancement 🔄
+**Status:** In Progress  
+**Sprint:** Sprint 3 (Current Priority)  
 **Stories:**
-- 6.5.1 Data Model & Status Adapter Foundation 📋 (Ready for dev)
+- 6.5.1 Data Model & Status Adapter Foundation 🔄 (In progress)
 - 6.5.2 Case Type Templates & Journey Generation 📋 (Ready for dev)
 - 6.5.3 Next Steps Generator & Panel 📋 (Ready for dev)
 - 6.5.4 Two-Column Layout & Progress Overview 📋 (Ready for dev)
 
-**Dependencies:** Epic 6 complete (Stories 6.3 & 6.4)
+**Dependencies:** Epic 6 complete (Stories 6.3 & 6.4) ✅
 
 **Deliverables:**
 - Enhanced case data model with case type support
@@ -276,9 +276,15 @@ This document provides the definitive reference for epic status, sequencing, and
 
 ---
 
+### Epic 13: AI Copilot & Dynamic Intake Experience 📋
+**Status:** Ready (Demo Priority)  
+**Sprint:** Sprint 3 (Primary Priority)  
+**PRD:** Complete (`docs/prd/epic-13-ai-copilot.md`)  
+**Architecture:** Unified specification validated (`docs/epic-13-unified-architecture-specification.md`)
+
 ### Epic 12: AI Intake (Smart Intake) 📝
-**Status:** Draft with Tech Spike  
-**Sprint:** Sprint 3 or 4 (Decision Required)  
+**Status:** Superseded by Epic 13  
+**Sprint:** Deferred  
 **PRD:** Complete (`docs/prd/epic-12-ai-intake.md`)  
 **Tech Spike:** AI Intake Tech Spike (`docs/AI_Intake_Tech_Spike.md`)
 

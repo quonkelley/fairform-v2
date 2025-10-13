@@ -20,6 +20,9 @@ export const CaseTypeSchema = z.enum([
   "consumer",
   "contract",
   "discrimination",
+  "eviction",
+  "family_law",
+  "other_civil",
   "other",
 ]);
 

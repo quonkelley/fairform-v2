@@ -1,40 +1,42 @@
-# Sprint 3 Master Plan
+# Sprint 3 Master Plan - UPDATED
 
 **Sprint:** Sprint 3  
 **Duration:** ~12-14 days  
-**Sprint Goal:** Complete Case Detail V2, deliver Day-in-Court Checklist, enable AI Intake foundation with User Settings  
+**Sprint Goal:** Complete Case Detail V2, deliver AI Copilot foundation for demo readiness  
 **Owner:** Sarah (Product Owner)  
-**Date:** October 10, 2025
+**Date:** January 13, 2025 (Updated from October 10, 2025)
+
+**⚠️ STATUS UPDATE:** This plan has been updated to reflect Epic 13 (AI Copilot) as the primary demo priority, with Epic 10 and 11 as supporting features.
 
 ---
 
-## 🎯 Sprint 3 Vision
+## 🎯 Sprint 3 Vision - UPDATED
 
-Transform FairForm from a basic case tracking tool into a comprehensive preparation platform by:
-1. Enhancing the case detail experience with progress tracking and actionable guidance
-2. Empowering users with court preparation checklists
-3. Establishing the foundation for AI-assisted intake
+Transform FairForm into an AI-augmented justice platform by:
+1. Completing the case detail experience with progress tracking and actionable guidance
+2. **Delivering AI Copilot foundation for impressive demos**
+3. Establishing context-aware conversational AI capabilities
 
-**Strategic Focus:** Foundation features that enable Sprint 4 AI capabilities while delivering immediate user value.
+**Strategic Focus:** Demo-ready AI features that showcase FairForm's potential as an intelligent legal guidance platform.
 
 ---
 
 ## 📋 Epic Sequence & Dependencies
 
-### Critical Path (Must Complete in Order)
+### Critical Path (Must Complete in Order) - UPDATED
 
 ```
-Sprint 2 Completion (Prerequisites)
+Sprint 2 Completion (Prerequisites) ✅
   ↓
-Epic 6 Complete (6.3, 6.4)
+Epic 6 Complete (6.3, 6.4) ✅
   ↓
-Epic 6.5: Case Detail V2 Enhancement (4-5 days) ← SPRINT 3 STARTS HERE
+Epic 6.5: Case Detail V2 Enhancement (2-3 days remaining) ← CURRENT
   ↓
-Epic 10: Day-in-Court Checklist (4.25 days) ← Depends on Epic 6.5 case types
+Epic 13: AI Copilot Foundation (3 weeks) ← DEMO PRIORITY
   ↓
-Epic 11: User Settings (1.5 days) ← Required for Epic 12
-  ↓
-Epic 8: Case Journey Polish (2-3 days) ← Can run parallel with Epic 11
+Epic 10: Day-in-Court Checklist (parallel) ← Supporting feature
+Epic 11: User Settings (parallel) ← Supporting feature
+Epic 8: Case Journey Polish (parallel) ← Maintenance work
 ```
 
 ---
@@ -59,13 +61,62 @@ Epic 8: Case Journey Polish (2-3 days) ← Can run parallel with Epic 11
 - ✅ Status adapter for enum-based step mapping
 
 ### Strategic Value
+- **Enables Epic 13:** Provides case type system needed for AI context
 - **Enables Epic 10:** Provides case type templates for checklists
-- **Enables Epic 12:** Establishes case type classification foundation
 - **Completes Case Journey:** Finishes the "Legal GPS" feature family
 
 ### Dependencies
-- **Prerequisite:** Epic 6 complete (Stories 6.3 & 6.4)
-- **Blocks:** Epic 10 (needs case type system)
+- **Prerequisite:** Epic 6 complete (Stories 6.3 & 6.4) ✅
+- **Blocks:** Epic 13 (AI Copilot needs case type system)
+
+---
+
+## 🤖 Epic 13: AI Copilot & Dynamic Intake Experience - NEW PRIORITY
+
+**Status:** 📋 Ready (Primary Demo Priority)  
+**Duration:** 3 weeks  
+**Owner:** Dev (James)
+
+### Stories (13 stories total)
+1. **13.1:** AI Sessions Repository (1 day) ✅ Validated
+2. **13.2:** Chat API with SSE Streaming (1 day)
+3. **13.3:** Context Builder & Fingerprinting (1 day)
+4. **13.4:** Demo Firebase Project Setup (0.5 day)
+5. **13.5:** Chat Widget UI Component (1 day)
+6. **13.6:** Chat Panel Component (1 day)
+7. **13.7:** useAICopilot Hook (1 day)
+8. **13.8:** Conversation Summarization (1 day)
+9. **13.9:** Message Pagination API (0.5 day)
+10. **13.10:** Context Snapshot System (1 day)
+11. **13.11:** Glossary Integration (0.5 day)
+12. **13.12:** Session Lifecycle Management (0.5 day)
+13. **13.13:** Context Fingerprint Caching (0.5 day)
+
+### Deliverables
+- ✅ Persistent AI chat accessible anywhere in app
+- ✅ Context-aware responses based on case data
+- ✅ SSE streaming for real-time responses
+- ✅ Demo Firebase project for sandbox isolation
+- ✅ Conversation history and summarization
+- ✅ Session lifecycle management
+- ✅ Performance optimization and caching
+
+### Strategic Value - DEMO PRIORITY
+- **Demo Impact:** Removes all gating, instant AI access
+- **User Experience:** Context-aware conversational assistance
+- **Platform Vision:** Positions FairForm as AI-augmented justice platform
+- **Stakeholder Appeal:** Impressive showcase of AI capabilities
+
+### Dependencies
+- **Prerequisite:** Epic 6.5 complete (case type system needed for AI context)
+- **Architecture:** Uses unified architecture specification (validated)
+
+### Demo Readiness Criteria
+- ✅ Conversational case creation working
+- ✅ Context-aware responses accurate
+- ✅ Accessible anywhere in app
+- ✅ No login/form gates for demo
+- ✅ Zero compliance issues
 
 ---
 
