@@ -6,8 +6,10 @@ import {
 } from "firebase-admin/firestore";
 
 import { getAdminFirestore } from "@/lib/firebase-admin";
-import type { Case, CreateCaseInput, CaseStatus } from "@/lib/validation";
+import type { Case, CreateCaseInput, CaseStatus, CaseType } from "@/lib/validation";
 import { listByCase as listStepsByCase } from "./stepsRepo";
+import { generateCaseJourney } from "@/lib/journeys/generate";
+import { hasTemplate } from "@/lib/journeys/templates";
 
 // Re-export types for backward compatibility
 export type { Case as CaseRecord, CreateCaseInput, CaseStatus };
@@ -96,6 +98,36 @@ export async function createCase(input: CreateCaseInput & { userId: string }): P
   } catch (error) {
     console.error("Failed to create case", { input, error });
     throw new CasesRepositoryError("Unable to create case", { cause: error });
+  }
+}
+
+/**
+ * Create a case with journey steps from template
+ * @param input - Case creation input with userId
+ * @returns Created case with generated journey steps
+ */
+export async function createCaseWithJourney(
+  input: CreateCaseInput & { userId: string }
+): Promise<Case> {
+  try {
+    // Create the case first
+    const newCase = await createCase(input);
+
+    // Generate journey steps from template if available
+    const caseType = input.caseType as CaseType;
+    if (hasTemplate(caseType)) {
+      await generateCaseJourney(newCase.id, caseType);
+
+      // Recalculate progress with new steps
+      return await calculateCaseProgress(newCase.id);
+    }
+
+    return newCase;
+  } catch (error) {
+    console.error("Failed to create case with journey", { input, error });
+    throw new CasesRepositoryError("Unable to create case with journey", {
+      cause: error,
+    });
   }
 }
 
