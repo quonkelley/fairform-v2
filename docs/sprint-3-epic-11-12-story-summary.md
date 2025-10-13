@@ -1,9 +1,11 @@
 # Sprint 3 Story Preparation Summary
 
-**Date:** October 11, 2025  
+**Date:** October 11, 2025 (Updated October 10, 2025)  
 **Prepared By:** Bob (Scrum Master) & Sarah (Product Owner)  
 **Sprint:** Sprint 3 - Smart Intake & Prep  
-**Epics:** Epic 11 (User Settings) & Epic 12 (AI Intake)
+**Epics:** Epic 6.5, Epic 10, Epic 11, Epic 12 (Epic 8 optional)
+
+**⚠️ NOTE:** This document has been superseded by `SPRINT-3-MASTER-PLAN.md` which provides the consolidated, authoritative Sprint 3 plan.
 
 ---
 
@@ -250,33 +252,48 @@
 
 ---
 
-## 🎯 Sprint 3 Recommended Sequence
+## 🎯 Sprint 3 Updated Sequence (See SPRINT-3-MASTER-PLAN.md)
 
-### Phase 1: Settings Foundation (Days 1-2)
-1. **Story 11.1** - Settings scaffold (0.5 day)
-2. **Story 11.2** - Profile preferences (0.5 day)
-3. **Story 11.3** - AI participation toggle (0.5 day)
+**⚠️ UPDATED SEQUENCE:**
 
-**Milestone:** User can enable AI features ✓
+### Week 1: Epic 6.5 (Days 1-5)
+1. **Epic 6.5** - Case Detail V2 Enhancement (4-5 days)
+   - Story 6.5.1: Data Model & Status Adapter (1 day)
+   - Story 6.5.2: Case Type Templates (1.5 days)
+   - Story 6.5.3: Next Steps Generator (1 day)
+   - Story 6.5.4: Two-Column Layout (1.5 days)
 
----
-
-### Phase 2: AI Intake Core (Days 3-7)
-4. **Story 12.1** - Text input UI (1 day)
-5. **Story 12.2** - API integration (1.5 days)
-6. **Story 12.3** - Results display (1 day)
-7. **Story 12.4** - Edit & save (1 day)
-
-**Milestone:** AI Intake end-to-end functional ✓
+**Milestone:** Case Detail V2 complete, enables Epic 10 ✓
 
 ---
 
-### Phase 3: Admin & QA (Days 8-9)
-8. **Story 12.5** - Admin analytics (1 day) - OPTIONAL
-9. **QA Review** - All stories (0.5 day)
-10. **Integration Testing** - End-to-end flows (0.5 day)
+### Week 2: Epic 10 (Days 6-10)
+2. **Epic 10** - Day-in-Court Checklist (4.25 days)
+   - Story 10.1: Page Scaffold (0.5 day)
+   - Story 10.2: Templates & Components (1 day)
+   - Story 10.3: LocalStorage Persistence (1 day)
+   - Story 10.4: Reset & Analytics (0.75 day)
+   - Story 10.5: Polish & QA (1 day)
 
-**Milestone:** Sprint complete, demo-ready ✓
+**Milestone:** Checklist feature complete ✓
+
+---
+
+### Week 3: Epic 11 & Epic 8 (Days 11-14)
+3. **Epic 11** - User Settings (1.5 days)
+   - Story 11.1: Settings scaffold (0.5 day)
+   - Story 11.2: Profile preferences (0.5 day)
+   - Story 11.3: AI participation toggle (0.5 day)
+
+4. **Epic 8** - Case Journey Polish (2-3 days) - Can run parallel
+   - Story 8.1: Regression QA (3 pts)
+   - Story 8.2-8.5: Integration bridges and polish
+
+**Milestone:** Sprint 3 complete, Epic 12 ready for Sprint 4 ✓
+
+---
+
+**Epic 12 Timing:** Deferred to Sprint 4 to allow proper compliance review and focus Sprint 3 on foundation features.
 
 ---
 

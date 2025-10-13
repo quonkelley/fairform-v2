@@ -116,12 +116,19 @@ export async function calculateCaseProgress(caseId: string): Promise<Case> {
       ? Math.round((completedSteps / totalSteps) * 100)
       : 0;
 
+    // Calculate currentStep: lowest order among incomplete steps, or totalSteps + 1 if all complete
+    const incompleteSteps = steps.filter(step => !step.isComplete);
+    const currentStep = incompleteSteps.length > 0
+      ? Math.min(...incompleteSteps.map(s => s.order))
+      : totalSteps > 0 ? totalSteps + 1 : 1;
+
     // Update case document with calculated values
     const db = getDb();
     await db.collection(COLLECTION_NAME).doc(caseId).update({
       progressPct,
       totalSteps,
       completedSteps,
+      currentStep,
       updatedAt: FieldValue.serverTimestamp(),
     });
 
@@ -165,6 +172,7 @@ function mapCaseDocument(
     progressPct: Number.isFinite(data.progressPct) ? data.progressPct : 0,
     totalSteps: Number.isFinite(data.totalSteps) ? data.totalSteps : undefined,
     completedSteps: Number.isFinite(data.completedSteps) ? data.completedSteps : undefined,
+    currentStep: Number.isFinite(data.currentStep) ? data.currentStep : undefined,
     notes:
       typeof data.notes === "string" && data.notes.trim().length
         ? data.notes

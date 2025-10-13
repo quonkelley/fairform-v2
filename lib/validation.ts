@@ -13,6 +13,16 @@ export type User = z.infer<typeof UserSchema>;
 // Case schemas
 export const CaseStatusSchema = z.enum(["active", "closed", "archived"]);
 
+export const CaseTypeSchema = z.enum([
+  "small_claims",
+  "employment",
+  "housing",
+  "consumer",
+  "contract",
+  "discrimination",
+  "other",
+]);
+
 export const CreateCaseSchema = z.object({
   caseType: z.string().min(1),
   jurisdiction: z.string().min(1),
@@ -29,6 +39,7 @@ export const CaseSchema = z.object({
   progressPct: z.number().min(0).max(100).optional(),
   totalSteps: z.number().int().min(0).optional(),
   completedSteps: z.number().int().min(0).optional(),
+  currentStep: z.number().int().min(0).optional(),
   createdAt: z.date(),
   updatedAt: z.date(),
   title: z.string().optional(),
@@ -38,6 +49,7 @@ export const CaseSchema = z.object({
 export type Case = z.infer<typeof CaseSchema>;
 export type CreateCaseInput = z.infer<typeof CreateCaseSchema>;
 export type CaseStatus = z.infer<typeof CaseStatusSchema>;
+export type CaseType = z.infer<typeof CaseTypeSchema>;
 
 // Case Step schemas
 export const CreateCaseStepSchema = z.object({

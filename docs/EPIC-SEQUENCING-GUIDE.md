@@ -133,6 +133,32 @@ This document provides the definitive reference for epic status, sequencing, and
 
 ---
 
+### Epic 6.5: Case Detail V2 Enhancement 📋
+**Status:** Ready  
+**Sprint:** Sprint 3 (Immediate Priority)  
+**Stories:**
+- 6.5.1 Data Model & Status Adapter Foundation 📋 (Ready for dev)
+- 6.5.2 Case Type Templates & Journey Generation 📋 (Ready for dev)
+- 6.5.3 Next Steps Generator & Panel 📋 (Ready for dev)
+- 6.5.4 Two-Column Layout & Progress Overview 📋 (Ready for dev)
+
+**Dependencies:** Epic 6 complete (Stories 6.3 & 6.4)
+
+**Deliverables:**
+- Enhanced case data model with case type support
+- Case type template registry with Small Claims implementation
+- Rule-based next steps generation system
+- Two-column dashboard layout with progress overview
+- Status adapter for enum-based step status mapping
+
+**Value Delivered:** Comprehensive case dashboard with progress tracking, actionable next steps, and case-type-specific guidance - foundation for AI Intake integration
+
+**Estimated Duration:** 4-5 days
+
+**Strategic Importance:** Enables Epic 10 (Day-in-Court Checklist) and Epic 12 (AI Intake) development by providing case type classification and template system
+
+---
+
 ## Pending Epic Resolution
 
 ### Epic 7: Inline Glossary 🤔
@@ -160,22 +186,25 @@ This document provides the definitive reference for epic status, sequencing, and
 
 ---
 
-### Epic 8: Case Step Details 🤔
-**Status:** Needs Clarification  
-**Sprint:** TBD  
-**PRD:** Partial (`docs/prd/epic-8-case-step-details.md`)
+### Epic 8: Case Journey Polish & Integration Bridges 📋
+**Status:** Ready (Post-Epic 6.5 Maintenance)  
+**Sprint:** Sprint 3 or 4 (After Epic 6.5)  
+**PRD:** Complete (`docs/prd/epic-8-case-step-details.md`)
 
-**Issue:** Potential overlap with Epic 6 (Case Journey Map)
-- Epic 6.3 creates step detail modal
-- Epic 8 also mentions step details and actions
-- Need to clarify if Epic 8 is:
-  - Enhancement to Epic 6 features?
-  - Maintenance/refinement work?
-  - Separate functionality?
+**Scope Clarified:** Epic 8 is pure maintenance and polish work for Case Journey Map
+- **Story 8.1:** Regression QA & accessibility audit (3 pts)
+- **Story 8.2:** Reminder hook scaffold for Epic 9 (4 pts)
+- **Story 8.3:** AI context bridge for Epic 12 (3 pts)
+- **Story 8.4:** Mobile modal polish & gestures (2 pts)
+- **Story 8.5:** Documentation & handoff (1 pt)
 
-**Action Required:** Review Epic 8 PRD against Epic 6 deliverables and clarify scope
+**Dependencies:** Epic 6 complete AND Epic 6.5 complete
 
-**Recommendation:** Defer until Epic 6 complete, then reassess what Epic 8 should cover
+**Value Delivered:** Quality assurance, mobile polish, and integration preparation for Epic 9 and Epic 12
+
+**Estimated Effort:** 13 points (~2-3 days)
+
+**Strategic Position:** Post-Epic 6.5 maintenance that can run parallel with Epic 10 or Epic 11
 
 ---
 
@@ -319,19 +348,19 @@ This document provides the definitive reference for epic status, sequencing, and
 
 ### Phase 2: Core User Features (Current)
 6. 🔄 Epic 6: Case Journey Map (in progress, 50% done)
+6.5. 📋 Epic 6.5: Case Detail V2 Enhancement (ready for Sprint 3)
 7. 🤔 Epic 7: Inline Glossary (decision pending)
 
-### Phase 3: Engagement & Preparation (Proposed for Sprint 3)
-8. Epic 9: Reminders System
-9. Epic 10: Day-in-Court Checklist
-10. Epic 11: User Settings
+### Phase 3: Engagement & Preparation (Sprint 3)
+8. Epic 6.5: Case Detail V2 Enhancement (4-5 days) - PRIORITY
+9. Epic 10: Day-in-Court Checklist (4.25 days)
+10. Epic 11: User Settings (1.5 days)
+11. Epic 8: Case Journey Polish & Integration Bridges (2-3 days) - Can run parallel
 
-### Phase 4: AI Features (Proposed for Sprint 4+)
-11. AI Tech Spike (infrastructure)
-12. Epic 12: AI Intake (with full compliance review)
-
-### Future Phases
-- Epic 8: Case Step Details (after clarification)
+### Phase 4: AI Features (Sprint 4+)
+12. AI Tech Spike (infrastructure)
+13. Epic 12: AI Intake (with full compliance review)
+14. Epic 9: Reminders System (after Epic 11 settings)
 - Additional case types and jurisdictions
 - Advanced AI features (conversational help, document analysis)
 - Admin tools and analytics
@@ -340,19 +369,36 @@ This document provides the definitive reference for epic status, sequencing, and
 
 ## Decision Points & Dependencies
 
-### Current Decision: Epic 7 Timing
+### Current Decision: Epic 6.5 Priority
+**Question:** Should Epic 6.5 be the first priority in Sprint 3?
+
+**Impact Analysis:**
+- **Epic 6.5 First:** Enables Epic 10 and Epic 12 development, completes Case Journey Map feature family
+- **Epic 6.5 Later:** Delays case type classification and template system needed for other epics
+
+**Dependencies:** Epic 6 complete (Stories 6.3 & 6.4)
+
+**Recommendation:** Epic 6.5 should be Sprint 3's first priority because:
+- Provides foundation for Epic 10 (Day-in-Court Checklist) case type templates
+- Enables Epic 12 (AI Intake) case type classification
+- Completes the Case Journey Map feature family
+- Low risk, high value incremental enhancement
+
+---
+
+### Next Decision: Epic 7 Timing
 **Question:** When should we implement the Inline Glossary?
 
 **Impact Analysis:**
-- **Include in Sprint 2:** Extends sprint by 2-3 days, delays Sprint 3 start
-- **Sprint 2.5 Mini-Sprint:** Separate 2-3 day sprint, clean boundaries
-- **Defer to Sprint 3+:** Focus Sprint 3 on reminders/settings/checklist first
+- **Include in Sprint 3:** After Epic 6.5 completion
+- **Sprint 3.5 Mini-Sprint:** Separate 2-3 day sprint, clean boundaries
+- **Defer to Sprint 4+:** Focus Sprint 3 on reminders/settings/checklist first
 
-**Dependencies:** Epic 6 complete (glossary integrates with step instructions)
+**Dependencies:** Epic 6.5 complete (glossary integrates with step instructions)
 
-**Recommendation:** Make decision after Stories 6.3 & 6.4 complete, based on:
+**Recommendation:** Make decision after Epic 6.5 completion, based on:
 - Team capacity and velocity
-- User feedback on Epic 6 (do they need glossary immediately?)
+- User feedback on Epic 6.5 (do they need glossary immediately?)
 - Sprint 3 scope and priorities
 
 ---
