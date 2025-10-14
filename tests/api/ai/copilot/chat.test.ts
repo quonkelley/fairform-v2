@@ -133,7 +133,7 @@ async function setupPost(overrides?: EnvOverrides) {
     meta: {},
     createdAt: Date.now(),
   });
-  mockUpdateSessionCase.mockResolvedValue();
+  mockUpdateSessionCase.mockResolvedValue(undefined);
 
   return module.POST;
 }

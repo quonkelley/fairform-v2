@@ -1,0 +1,96 @@
+rules_version = '2';
+
+// Demo Firestore Security Rules
+// These rules are designed for the demo environment with anonymous authentication
+// DO NOT use these rules in production - they allow open access for demo purposes
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper function to check if user is authenticated with anonymous auth
+    function isAnonymous() {
+      return request.auth != null &&
+             request.auth.token.firebase.sign_in_provider == 'anonymous';
+    }
+
+    // Helper function to check if user is authenticated (any method)
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // =========================================
+    // AI SESSIONS - Demo open access
+    // =========================================
+    match /aiSessions/{sessionId} {
+      allow read, write: if isAuthenticated();
+
+      // AI Session messages subcollection
+      match /messages/{messageId} {
+        allow read, write: if isAuthenticated();
+      }
+    }
+
+    // =========================================
+    // CASES - Demo open access
+    // =========================================
+    match /cases/{caseId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // =========================================
+    // CASE STEPS - Demo open access
+    // =========================================
+    match /caseSteps/{stepId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // =========================================
+    // REMINDERS - Demo open access
+    // =========================================
+    match /reminders/{reminderId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // =========================================
+    // USERS - Demo open access
+    // =========================================
+    match /users/{userId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // =========================================
+    // GLOSSARY - Read-only for authenticated users
+    // =========================================
+    match /glossary/{termId} {
+      allow read: if isAuthenticated();
+      allow write: if false; // No writes to glossary in demo
+    }
+
+    // =========================================
+    // AI INTAKE LOGS - Demo open access for testing
+    // =========================================
+    match /aiIntakeLogs/{logId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // =========================================
+    // DEMO DATA COLLECTIONS - Open access
+    // =========================================
+    // Collections specifically for demo purposes
+    match /demoSessions/{sessionId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    match /demoUsers/{userId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // =========================================
+    // BLOCK ALL OTHER COLLECTIONS
+    // =========================================
+    // Default deny rule for any collections not explicitly allowed
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -2,10 +2,16 @@ import { z } from "zod";
 
 // User schemas
 export const UserSchema = z.object({
+  id: z.string(),
   email: z.string().email(),
   displayName: z.string().nullable(),
   createdAt: z.date(),
   role: z.literal("user"),
+  // Optional AI preferences
+  aiParticipation: z.boolean().optional(),
+  timeZone: z.string().optional(),
+  tone: z.enum(["formal", "friendly", "helpful"]).optional(),
+  complexity: z.enum(["simple", "detailed"]).optional(),
 });
 
 export type User = z.infer<typeof UserSchema>;
@@ -133,6 +139,8 @@ export const CreateReminderResponseSchema = z.object({
 
 export const HealthResponseSchema = z.object({
   ok: z.boolean(),
+  demo: z.boolean(),
+  timestamp: z.string().datetime(),
 });
 
 export type ApiError = z.infer<typeof ApiErrorSchema>;

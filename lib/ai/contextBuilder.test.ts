@@ -32,10 +32,14 @@ describe('contextBuilder', () => {
     it('should build context with user data only', async () => {
       const mockUser = {
         id: 'user-123',
+        email: 'test@example.com',
+        displayName: 'Test User',
+        createdAt: new Date(),
+        role: 'user' as const,
         timeZone: 'America/Los_Angeles',
         aiParticipation: true,
-        tone: 'friendly',
-        complexity: 'simple'
+        tone: 'friendly' as const,
+        complexity: 'simple' as const
       };
 
       mockGetById.mockResolvedValue(mockUser);
@@ -55,22 +59,29 @@ describe('contextBuilder', () => {
     it('should build context with case data when caseId provided', async () => {
       const mockUser = {
         id: 'user-123',
+        email: 'test@example.com',
+        displayName: 'Test User',
+        createdAt: new Date(),
+        role: 'user' as const,
         timeZone: 'America/Los_Angeles'
       };
 
       const mockCase = {
         id: 'case-456',
+        userId: 'user-123',
         caseType: 'small_claims',
         jurisdiction: 'Los Angeles County',
-        status: 'active',
+        status: 'active' as const,
         currentStepOrder: 2,
         progressPct: 40,
+        createdAt: new Date(),
+        updatedAt: new Date(),
         narrative: 'This should be filtered out', // Should not appear
         sensitiveData: 'Also filtered out' // Should not appear
       };
 
       mockGetById.mockResolvedValue(mockUser);
-      mockGetCase.mockResolvedValue(mockCase);
+      mockGetCase.mockResolvedValue(mockCase as any);
 
       const context = await buildContext('user-123', 'case-456');
 
@@ -85,6 +96,10 @@ describe('contextBuilder', () => {
     it('should build context with conversation summary when sessionId provided', async () => {
       const mockUser = {
         id: 'user-123',
+        email: 'test@example.com',
+        displayName: 'Test User',
+        createdAt: new Date(),
+        role: 'user' as const,
         timeZone: 'America/Los_Angeles'
       };
 
@@ -93,11 +108,12 @@ describe('contextBuilder', () => {
           { author: 'user', content: 'I need help with my case' },
           { author: 'assistant', content: 'I can help you with that' },
           { author: 'user', content: 'What should I do next?' }
-        ]
+        ],
+        hasMore: false
       };
 
       mockGetById.mockResolvedValue(mockUser);
-      mockListMessages.mockResolvedValue(mockMessages);
+      mockListMessages.mockResolvedValue(mockMessages as any);
 
       const context = await buildContext('user-123', undefined, 'session-789');
 
@@ -115,6 +131,10 @@ describe('contextBuilder', () => {
     it('should handle missing case gracefully', async () => {
       const mockUser = {
         id: 'user-123',
+        email: 'test@example.com',
+        displayName: 'Test User',
+        createdAt: new Date(),
+        role: 'user' as const,
         timeZone: 'America/Los_Angeles'
       };
 
@@ -130,6 +150,10 @@ describe('contextBuilder', () => {
     it('should handle conversation summarization errors gracefully', async () => {
       const mockUser = {
         id: 'user-123',
+        email: 'test@example.com',
+        displayName: 'Test User',
+        createdAt: new Date(),
+        role: 'user' as const,
         timeZone: 'America/Los_Angeles'
       };
 
@@ -190,7 +214,7 @@ describe('contextBuilder', () => {
         id: 'user-123',
         email: 'user@example.com', // Should be filtered out
         aiParticipation: true,
-        timeZone: 'America/Los_Angeles',
+        timeZone: 'America/Los_Angeles', // Should be filtered out (not in preferences)
         tone: 'friendly',
         complexity: 'simple',
         password: 'secret', // Should be filtered out
@@ -200,7 +224,6 @@ describe('contextBuilder', () => {
       const filtered = filterUserData(userData);
 
       expect(filtered?.aiParticipation).toBe(true);
-      expect(filtered?.timeZone).toBe('America/Los_Angeles');
       expect(filtered?.tone).toBe('friendly');
       expect(filtered?.complexity).toBe('simple');
     });
@@ -227,7 +250,7 @@ describe('contextBuilder', () => {
           currentStepOrder: 2
         },
         user: {
-          preferences: { tone: 'friendly' }
+          preferences: { tone: 'friendly' as const }
         }
       };
 
@@ -238,7 +261,7 @@ describe('contextBuilder', () => {
           currentStepOrder: 2
         },
         user: {
-          preferences: { tone: 'friendly' }
+          preferences: { tone: 'friendly' as const }
         }
       };
 
@@ -375,22 +398,27 @@ describe('contextBuilder', () => {
     it('should handle complete context building with all data', async () => {
       const mockUser = {
         id: 'user-123',
+        email: 'test@example.com',
+        displayName: 'Test User',
+        createdAt: new Date(),
+        role: 'user' as const,
         timeZone: 'America/Los_Angeles',
         aiParticipation: true,
-        tone: 'formal',
-        complexity: 'detailed'
+        tone: 'formal' as const,
+        complexity: 'detailed' as const
       };
 
       const mockCase = {
         id: 'case-456',
+        userId: 'user-123',
         caseType: 'eviction',
         jurisdiction: 'San Francisco County',
-        status: 'active',
+        status: 'active' as const,
         currentStepOrder: 3,
         progressPct: 60,
-        narrative: 'Sensitive case details', // Should be filtered
-        createdAt: '2025-01-01T00:00:00Z',
-        updatedAt: '2025-01-13T00:00:00Z'
+        createdAt: new Date('2025-01-01T00:00:00Z'),
+        updatedAt: new Date('2025-01-13T00:00:00Z'),
+        narrative: 'Sensitive case details' // Should be filtered
       };
 
       const mockMessages = {
@@ -398,12 +426,13 @@ describe('contextBuilder', () => {
           { author: 'user', content: 'I need help with my eviction case' },
           { author: 'assistant', content: 'I can help you with eviction procedures' },
           { author: 'user', content: 'What documents do I need?' }
-        ]
+        ],
+        hasMore: false
       };
 
       mockGetById.mockResolvedValue(mockUser);
-      mockGetCase.mockResolvedValue(mockCase);
-      mockListMessages.mockResolvedValue(mockMessages);
+      mockGetCase.mockResolvedValue(mockCase as any);
+      mockListMessages.mockResolvedValue(mockMessages as any);
 
       const context = await buildContext('user-123', 'case-456', 'session-789');
 

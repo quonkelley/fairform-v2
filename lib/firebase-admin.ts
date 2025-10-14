@@ -1,19 +1,13 @@
 import { cert, getApps, initializeApp, type App } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { getFirestore, type Firestore } from "firebase-admin/firestore";
+import { getFirebaseAdminConfig, validateFirebaseAdminConfig } from "./config/demo";
 
 let cachedApp: App | null = null;
 
 function createFirebaseAdminApp(): App {
-  const serviceAccount = {
-    projectId: process.env.FIREBASE_PROJECT_ID,
-    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-    privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
-  };
-
-  if (!serviceAccount.projectId || !serviceAccount.clientEmail || !serviceAccount.privateKey) {
-    throw new Error("Missing Firebase Admin SDK configuration");
-  }
+  const serviceAccount = getFirebaseAdminConfig();
+  validateFirebaseAdminConfig(serviceAccount);
 
   return initializeApp({
     credential: cert(serviceAccount),

@@ -55,7 +55,13 @@ export async function create(userData: Omit<User, "id" | "createdAt">): Promise<
   try {
     const db = getDb();
     const docRef = await db.collection(COLLECTION_NAME).add({
-      ...userData,
+      email: userData.email,
+      displayName: userData.displayName,
+      role: userData.role,
+      aiParticipation: userData.aiParticipation,
+      timeZone: userData.timeZone,
+      tone: userData.tone,
+      complexity: userData.complexity,
       createdAt: FieldValue.serverTimestamp(),
     });
 
@@ -65,7 +71,13 @@ export async function create(userData: Omit<User, "id" | "createdAt">): Promise<
       // Fallback for eventual consistency
       return {
         id: docRef.id,
-        ...userData,
+        email: userData.email,
+        displayName: userData.displayName,
+        role: userData.role,
+        aiParticipation: userData.aiParticipation,
+        timeZone: userData.timeZone,
+        tone: userData.tone,
+        complexity: userData.complexity,
         createdAt: new Date(),
       };
     }
@@ -124,6 +136,10 @@ function mapUserDocument(snapshot: DocumentSnapshot<DocumentData>): User {
     displayName: data.displayName ? String(data.displayName) : null,
     createdAt: resolveTimestamp(data.createdAt),
     role: "user" as const,
+    aiParticipation: data.aiParticipation !== undefined ? Boolean(data.aiParticipation) : undefined,
+    timeZone: data.timeZone !== undefined ? String(data.timeZone) : undefined,
+    tone: data.tone !== undefined ? String(data.tone) as "formal" | "friendly" | "helpful" : undefined,
+    complexity: data.complexity !== undefined ? String(data.complexity) as "simple" | "detailed" : undefined,
   };
 }
 

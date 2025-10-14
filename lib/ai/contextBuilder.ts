@@ -16,7 +16,6 @@ export const ALLOWLISTED_CASE_FIELDS = [
 
 export const ALLOWLISTED_USER_FIELDS = [
   'aiParticipation',    // Boolean preference
-  'timeZone',          // User timezone
   'tone',              // 'formal', 'friendly', 'helpful'
   'complexity'         // 'simple', 'detailed'
 ] as const;
@@ -154,16 +153,24 @@ export function filterCaseData(caseData: Record<string, unknown>): Record<string
  * Filter user data to only include allowlisted fields
  */
 export function filterUserData(userData: Record<string, unknown>): UserPreferences | undefined {
-  const preferences: UserPreferences = {};
-  
-  for (const field of ALLOWLISTED_USER_FIELDS) {
-    if (userData[field] !== undefined) {
-      preferences[field] = userData[field];
-    }
+  const preferences: Partial<UserPreferences> = {};
+
+  if (userData.aiParticipation !== undefined && typeof userData.aiParticipation === 'boolean') {
+    preferences.aiParticipation = userData.aiParticipation;
   }
-  
+
+  if (userData.tone !== undefined &&
+      (userData.tone === 'formal' || userData.tone === 'friendly' || userData.tone === 'helpful')) {
+    preferences.tone = userData.tone;
+  }
+
+  if (userData.complexity !== undefined &&
+      (userData.complexity === 'simple' || userData.complexity === 'detailed')) {
+    preferences.complexity = userData.complexity;
+  }
+
   // Return undefined if no preferences found
-  return Object.keys(preferences).length > 0 ? preferences : undefined;
+  return Object.keys(preferences).length > 0 ? preferences as UserPreferences : undefined;
 }
 
 
