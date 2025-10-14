@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { createCase, listByUser } from "@/lib/db/casesRepo";
+import { createCaseWithJourney, listByUser } from "@/lib/db/casesRepo";
 import { CreateCaseSchema, CreateCaseResponseSchema } from "@/lib/validation";
 import { requireAuth } from "@/lib/auth/server-auth";
 
@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
     const caseData = validationResult.data;
     console.log("[POST /api/cases] Creating case with data:", caseData);
 
-    const newCase = await createCase({
+    const newCase = await createCaseWithJourney({
       ...caseData,
       userId: user.uid,
     });

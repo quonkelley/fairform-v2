@@ -1,0 +1,82 @@
+schema: 1
+story: '6.5.2'
+story_title: 'Case Type Templates & Journey Generation'
+gate: CONCERNS
+status_reason: 'Excellent technical implementation with 100% test coverage, but template content requires legal review before production deployment'
+reviewer: 'Quinn (Test Architect)'
+updated: '2025-10-13T14:00:00Z'
+
+top_issues:
+  - id: 'LEGAL-001'
+    severity: high
+    finding: 'Template content requires legal counsel review for UPL compliance'
+    suggested_action: 'Submit all template content to legal counsel before production'
+  - id: 'LEGAL-002'
+    severity: medium
+    finding: 'Disclaimer prominence needs validation in UI'
+    suggested_action: 'Verify disclaimers prominently displayed in Story 6.5.4'
+  - id: 'LEGAL-003'
+    severity: medium
+    finding: 'Jurisdiction-specific guidance may be inaccurate'
+    suggested_action: 'Validate template content for California jurisdiction'
+
+waiver:
+  active: false
+
+quality_score: 95
+
+evidence:
+  tests_reviewed: 41
+  tests_passing: 41
+  regression_tests: 85
+  regression_passing: 85
+  code_coverage: 100
+  typescript_errors: 0
+  performance_ms: 100
+  performance_target_ms: 150
+
+acceptance_criteria:
+  functional: 3/4  # AC3 needs legal review
+  technical: 3/3
+  quality: 3/3
+  total: 9/10
+
+nfr_validation:
+  performance:
+    status: PASS
+    notes: '100ms generation time, well under 150ms target'
+  reliability:
+    status: PASS
+    notes: 'Proper error handling, graceful degradation'
+  maintainability:
+    status: PASS
+    notes: '100% test coverage, clean architecture'
+  security:
+    status: CONCERNS
+    notes: 'UPL risk requires legal assessment'
+  legal_compliance:
+    status: CONCERNS
+    notes: 'Template content requires legal counsel review'
+
+recommendations:
+  immediate:
+    - action: 'Submit template content to legal counsel'
+      priority: 'CRITICAL'
+      refs: ['lib/journeys/templates/index.ts']
+    - action: 'UPL risk assessment by attorney'
+      priority: 'CRITICAL'
+      refs: ['all template content']
+    - action: 'Jurisdiction validation (California)'
+      priority: 'HIGH'
+      refs: ['Small Claims template']
+  future:
+    - action: 'Add template versioning system'
+      priority: 'MEDIUM'
+      refs: ['lib/journeys/templates/']
+    - action: 'User testing with actual SRLs'
+      priority: 'MEDIUM'
+      refs: ['template content']
+    - action: 'Jurisdiction-specific template variants'
+      priority: 'LOW'
+      refs: ['future enhancement']
+

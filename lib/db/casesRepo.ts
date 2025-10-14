@@ -6,11 +6,19 @@ import {
 } from "firebase-admin/firestore";
 
 import { getAdminFirestore } from "@/lib/firebase-admin";
-import type { Case, CreateCaseInput, CaseStatus } from "@/lib/validation";
+import type { Case, CreateCaseInput, CaseStatus, CaseType } from "@/lib/validation";
 import { listByCase as listStepsByCase } from "./stepsRepo";
+import { generateCaseJourney } from "@/lib/journeys/generate";
+import { hasTemplate } from "@/lib/journeys/templates";
 
 // Re-export types for backward compatibility
 export type { Case as CaseRecord, CreateCaseInput, CaseStatus };
+
+// Interface for Firebase Admin SDK Timestamp
+interface FirebaseTimestamp {
+  toDate: () => Date;
+  _seconds: number;
+}
 
 export class CasesRepositoryError extends Error {
   constructor(message: string, options?: { cause?: unknown }) {
@@ -100,6 +108,36 @@ export async function createCase(input: CreateCaseInput & { userId: string }): P
 }
 
 /**
+ * Create a case with journey steps from template
+ * @param input - Case creation input with userId
+ * @returns Created case with generated journey steps
+ */
+export async function createCaseWithJourney(
+  input: CreateCaseInput & { userId: string }
+): Promise<Case> {
+  try {
+    // Create the case first
+    const newCase = await createCase(input);
+
+    // Generate journey steps from template if available
+    const caseType = input.caseType as CaseType;
+    if (hasTemplate(caseType)) {
+      await generateCaseJourney(newCase.id, caseType);
+
+      // Recalculate progress with new steps
+      return await calculateCaseProgress(newCase.id);
+    }
+
+    return newCase;
+  } catch (error) {
+    console.error("Failed to create case with journey", { input, error });
+    throw new CasesRepositoryError("Unable to create case with journey", {
+      cause: error,
+    });
+  }
+}
+
+/**
  * Calculate and update case progress based on completed steps
  * @param caseId - The case ID to calculate progress for
  * @returns Updated case with progress fields
@@ -116,12 +154,19 @@ export async function calculateCaseProgress(caseId: string): Promise<Case> {
       ? Math.round((completedSteps / totalSteps) * 100)
       : 0;
 
+    // Calculate currentStep: lowest order among incomplete steps, or totalSteps + 1 if all complete
+    const incompleteSteps = steps.filter(step => !step.isComplete);
+    const currentStep = incompleteSteps.length > 0
+      ? Math.min(...incompleteSteps.map(s => s.order))
+      : totalSteps > 0 ? totalSteps + 1 : 1;
+
     // Update case document with calculated values
     const db = getDb();
     await db.collection(COLLECTION_NAME).doc(caseId).update({
       progressPct,
       totalSteps,
       completedSteps,
+      currentStep,
       updatedAt: FieldValue.serverTimestamp(),
     });
 
@@ -165,6 +210,7 @@ function mapCaseDocument(
     progressPct: Number.isFinite(data.progressPct) ? data.progressPct : 0,
     totalSteps: Number.isFinite(data.totalSteps) ? data.totalSteps : undefined,
     completedSteps: Number.isFinite(data.completedSteps) ? data.completedSteps : undefined,
+    currentStep: Number.isFinite(data.currentStep) ? data.currentStep : undefined,
     notes:
       typeof data.notes === "string" && data.notes.trim().length
         ? data.notes
@@ -177,14 +223,14 @@ function mapCaseDocument(
 function resolveTimestamp(value: unknown): Date {
   // Admin SDK Timestamp has toDate() method
   if (value && typeof value === "object" && "toDate" in value && typeof value.toDate === "function") {
-    return (value as any).toDate();
+    return (value as FirebaseTimestamp).toDate();
   }
   if (value instanceof Date) {
     return value;
   }
   // Admin SDK Timestamp also has _seconds property
   if (value && typeof value === "object" && "_seconds" in value) {
-    return new Date((value as any)._seconds * 1000);
+    return new Date((value as FirebaseTimestamp)._seconds * 1000);
   }
   if (typeof value === "number") {
     return new Date(value);

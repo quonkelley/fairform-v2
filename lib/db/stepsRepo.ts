@@ -15,6 +15,19 @@ export class StepsRepositoryError extends Error {
   }
 }
 
+// Interface for Firebase Admin SDK Timestamp
+interface FirebaseTimestamp {
+  toDate: () => Date;
+  _seconds: number;
+}
+
+// Type for Firestore update data with FieldValue support
+interface UpdateData {
+  isComplete: boolean;
+  updatedAt: ReturnType<typeof FieldValue.serverTimestamp>;
+  completedAt: ReturnType<typeof FieldValue.serverTimestamp> | null;
+}
+
 const COLLECTION_NAME = "caseSteps";
 
 export async function listByCase(caseId: string): Promise<CaseStep[]> {
@@ -77,16 +90,11 @@ export async function updateStepCompletion(
   try {
     const db = getDb();
 
-    const updateData: any = {
+    const updateData: UpdateData = {
       isComplete: input.isComplete,
       updatedAt: FieldValue.serverTimestamp(),
+      completedAt: input.isComplete ? FieldValue.serverTimestamp() : null,
     };
-
-    if (input.isComplete) {
-      updateData.completedAt = FieldValue.serverTimestamp();
-    } else {
-      updateData.completedAt = null;
-    }
 
     await db.collection(COLLECTION_NAME).doc(stepId).update(updateData);
 
@@ -148,14 +156,14 @@ function resolveTimestamp(value: unknown): Date | null {
 
   // Admin SDK Timestamp has toDate() method
   if (value && typeof value === "object" && "toDate" in value && typeof value.toDate === "function") {
-    return (value as any).toDate();
+    return (value as FirebaseTimestamp).toDate();
   }
   if (value instanceof Date) {
     return value;
   }
   // Admin SDK Timestamp also has _seconds property
   if (value && typeof value === "object" && "_seconds" in value) {
-    return new Date((value as any)._seconds * 1000);
+    return new Date((value as FirebaseTimestamp)._seconds * 1000);
   }
   if (typeof value === "number") {
     return new Date(value);
