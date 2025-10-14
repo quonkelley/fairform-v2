@@ -58,9 +58,9 @@ function createWrapper() {
 describe('useAICopilot', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    (global.fetch as any).mockClear();
+    (global.fetch as jest.Mock).mockClear();
     if (global.EventSource) {
-      (global.EventSource as any).mockClear();
+      (global.EventSource as jest.Mock).mockClear();
     }
     consoleSpy.error.mockClear();
     consoleSpy.warn.mockClear();
@@ -107,7 +107,7 @@ describe('useAICopilot', () => {
         sessionId: 'test-session-123',
       };
 
-      (global.fetch as any).mockImplementation((url: string) => {
+      (global.fetch as jest.Mock).mockImplementation((url: string) => {
         if (url.includes('/api/ai/sessions')) {
           return Promise.resolve({
             ok: true,
@@ -194,7 +194,7 @@ describe('useAICopilot', () => {
         total: 2,
       };
 
-      (global.fetch as any).mockImplementation((url: string) => {
+      (global.fetch as jest.Mock).mockImplementation((url: string) => {
         if (url.includes('/api/ai/sessions') && url.includes('/messages')) {
           return Promise.resolve({
             ok: true,
@@ -241,7 +241,7 @@ describe('useAICopilot', () => {
         total: 1,
       };
 
-      (global.fetch as any).mockImplementation((url: string) => {
+      (global.fetch as jest.Mock).mockImplementation((url: string) => {
         if (url.includes('/api/ai/sessions') && url.includes('/messages')) {
           return Promise.resolve({
             ok: true,
@@ -314,7 +314,7 @@ describe('useAICopilot', () => {
         },
       };
 
-      (global.fetch as any).mockImplementation((url: string) => {
+      (global.fetch as jest.Mock).mockImplementation((url: string) => {
         if (url.includes('/api/ai/copilot/chat')) {
           return Promise.resolve(mockSSEResponse);
         }
@@ -351,14 +351,14 @@ describe('useAICopilot', () => {
 
     it('sends message with JSON fallback when SSE not supported', async () => {
       // Mock no EventSource support
-      delete (global as any).EventSource;
+      delete (global as { EventSource?: unknown }).EventSource;
 
       const mockJSONResponse = {
         ok: true,
         json: () => Promise.resolve({ message: 'Hello from AI!' }),
       };
 
-      (global.fetch as any).mockImplementation((url: string) => {
+      (global.fetch as jest.Mock).mockImplementation((url: string) => {
         if (url.includes('/api/ai/copilot/chat')) {
           return Promise.resolve(mockJSONResponse);
         }
@@ -393,7 +393,7 @@ describe('useAICopilot', () => {
     });
 
     it('handles send message errors gracefully', async () => {
-      (global.fetch as any).mockRejectedValue(new Error('Network error'));
+      (global.fetch as jest.Mock).mockRejectedValue(new Error('Network error'));
 
       const { result } = renderHook(
         () => useAICopilot({ sessionId: 'session-1' }),
@@ -444,9 +444,9 @@ describe('useAICopilot', () => {
 
     it('shows disconnected status when no session or user', () => {
       // Mock no user
-      vi.mocked(require('@/components/auth/auth-context').useAuth).mockReturnValue({
-        user: null,
-      });
+      vi.doMock('@/components/auth/auth-context', () => ({
+        useAuth: () => ({ user: null }),
+      }));
 
       const { result } = renderHook(() => useAICopilot(), {
         wrapper: createWrapper(),
@@ -521,7 +521,7 @@ describe('useAICopilot', () => {
     });
 
     it('handles session fetch errors', async () => {
-      (global.fetch as any).mockRejectedValue(new Error('Session not found'));
+      (global.fetch as jest.Mock).mockRejectedValue(new Error('Session not found'));
 
       const { result } = renderHook(
         () => useAICopilot({ sessionId: 'invalid-session' }),
@@ -566,7 +566,7 @@ describe('useAICopilot', () => {
         json: () => Promise.resolve({ message: 'Response' }),
       };
 
-      (global.fetch as any).mockResolvedValue(mockJSONResponse);
+      (global.fetch as jest.Mock).mockResolvedValue(mockJSONResponse);
 
       await act(async () => {
         await result.current.sendMessage('Test');
@@ -594,7 +594,7 @@ describe('useAICopilot', () => {
         json: () => Promise.resolve({ message: 'Response' }),
       };
 
-      (global.fetch as any).mockResolvedValue(mockJSONResponse);
+      (global.fetch as jest.Mock).mockResolvedValue(mockJSONResponse);
 
       await act(async () => {
         await result.current.sendMessage('Test');

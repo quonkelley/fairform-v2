@@ -1,16 +1,16 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { ChatPanel, Message } from './ChatPanel';
+import { ChatPanel } from './ChatPanel';
 
 import { vi } from 'vitest';
 
 // Mock framer-motion to avoid animation issues in tests
 vi.mock('framer-motion', () => ({
   motion: {
-    div: ({ children, ...props }: any) => <div {...props}>{children}</div>,
+    div: ({ children, ...props }: { children: React.ReactNode; [key: string]: unknown }) => <div {...props}>{children}</div>,
   },
-  AnimatePresence: ({ children }: any) => <>{children}</>,
+  AnimatePresence: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
 // Mock lucide-react icons
@@ -54,9 +54,9 @@ describe('ChatPanel', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // Reset fetch mock
-    (global.fetch as any).mockClear();
+    (global.fetch as jest.Mock).mockClear();
     // Reset EventSource mock
-    (global.EventSource as any).mockClear();
+    (global.EventSource as jest.Mock).mockClear();
   });
 
   describe('Rendering', () => {
@@ -313,7 +313,7 @@ describe('ChatPanel', () => {
           }),
         },
       };
-      (global.fetch as any).mockResolvedValue(mockResponse);
+      (global.fetch as jest.Mock).mockResolvedValue(mockResponse);
       
       render(<ChatPanel {...defaultProps} />);
       
@@ -366,7 +366,7 @@ describe('ChatPanel', () => {
           }),
         },
       };
-      (global.fetch as any).mockResolvedValue(mockResponse);
+      (global.fetch as jest.Mock).mockResolvedValue(mockResponse);
       
       render(<ChatPanel {...defaultProps} />);
       
@@ -394,7 +394,7 @@ describe('ChatPanel', () => {
           }),
         },
       };
-      (global.fetch as any).mockResolvedValue(mockResponse);
+      (global.fetch as jest.Mock).mockResolvedValue(mockResponse);
       
       render(<ChatPanel {...defaultProps} />);
       
@@ -457,7 +457,7 @@ describe('ChatPanel', () => {
       const user = userEvent.setup();
       
       // Mock failed fetch response
-      (global.fetch as any).mockRejectedValue(new Error('Network error'));
+      (global.fetch as jest.Mock).mockRejectedValue(new Error('Network error'));
       
       // Mock console.error to avoid noise in test output
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});

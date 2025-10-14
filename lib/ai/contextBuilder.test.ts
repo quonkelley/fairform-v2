@@ -81,7 +81,7 @@ describe('contextBuilder', () => {
       };
 
       mockGetById.mockResolvedValue(mockUser);
-      mockGetCase.mockResolvedValue(mockCase as any);
+      mockGetCase.mockResolvedValue(mockCase);
 
       const context = await buildContext('user-123', 'case-456');
 
@@ -113,7 +113,7 @@ describe('contextBuilder', () => {
       };
 
       mockGetById.mockResolvedValue(mockUser);
-      mockListMessages.mockResolvedValue(mockMessages as any);
+      mockListMessages.mockResolvedValue(mockMessages);
 
       const context = await buildContext('user-123', undefined, 'session-789');
 
@@ -431,8 +431,8 @@ describe('contextBuilder', () => {
       };
 
       mockGetById.mockResolvedValue(mockUser);
-      mockGetCase.mockResolvedValue(mockCase as any);
-      mockListMessages.mockResolvedValue(mockMessages as any);
+      mockGetCase.mockResolvedValue(mockCase);
+      mockListMessages.mockResolvedValue(mockMessages);
 
       const context = await buildContext('user-123', 'case-456', 'session-789');
 

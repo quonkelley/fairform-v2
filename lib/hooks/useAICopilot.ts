@@ -5,22 +5,17 @@ import {
   useQuery, 
   useMutation, 
   useInfiniteQuery, 
-  useQueryClient
+  useQueryClient,
+  type InfiniteData
 } from '@tanstack/react-query';
 import { useAuth } from '@/components/auth/auth-context';
 import type { 
   AISession, 
   AIMessage, 
-  CreateSessionInput,
   AIPromptContext,
   UserPreferences 
 } from '@/lib/ai/types';
 import { 
-  createSession, 
-  getSession, 
-  appendMessage, 
-  listMessages,
-  type ListMessagesOptions,
   type PaginatedMessages 
 } from '@/lib/db/aiSessionsRepo';
 
@@ -131,7 +126,7 @@ export function useAICopilot(options: UseAICopilotOptions = {}): UseAICopilotRet
   // Demo mode detection
   const isDemoMode = useMemo(() => {
     return process.env.NODE_ENV === 'development' || 
-           window.location.hostname.includes('demo') ||
+           (typeof window !== 'undefined' && window.location.hostname.includes('demo')) ||
            !user;
   }, [user]);
 
@@ -262,94 +257,8 @@ export function useAICopilot(options: UseAICopilotOptions = {}): UseAICopilotRet
     }
   }, [currentSessionId, user, isDemoMode]);
 
-  // Message sending with SSE streaming
-  const sendMessage = useCallback(async (content: string) => {
-    if (!currentSessionId || !user || isSending) return;
-
-    setIsSending(true);
-    setError(null);
-
-    try {
-      const idToken = await user.getIdToken();
-      
-      // Optimistic update - add user message immediately
-      const userMessage: AIMessage = {
-        id: `temp_${Date.now()}`,
-        sessionId: currentSessionId,
-        author: 'user',
-        content,
-        createdAt: Date.now(),
-        meta: { status: 'sending' }
-      };
-
-      // Add optimistic message to cache
-      queryClient.setQueryData(
-        queryKeys.messages(currentSessionId),
-        (old: any) => {
-          if (!old) return { pages: [{ items: [userMessage], hasMore: false, total: 1 }] };
-          const newPages = [...old.pages];
-          if (newPages.length > 0) {
-            newPages[0] = {
-              ...newPages[0],
-              items: [userMessage, ...newPages[0].items]
-            };
-          }
-          return { ...old, pages: newPages };
-        }
-      );
-
-      if (enableStreaming && typeof EventSource !== 'undefined') {
-        // Use SSE streaming
-        await handleSSEResponse(content, currentSessionId, idToken);
-      } else {
-        // Fallback to JSON response
-        await handleJSONResponse(content, currentSessionId, idToken);
-      }
-
-      // Mark message as sent
-      queryClient.setQueryData(
-        queryKeys.messages(currentSessionId),
-        (old: any) => {
-          if (!old) return old;
-          const newPages = old.pages.map((page: any) => ({
-            ...page,
-            items: page.items.map((msg: AIMessage) =>
-              msg.id === userMessage.id
-                ? { ...msg, meta: { ...msg.meta, status: 'sent' } }
-                : msg
-            )
-          }));
-          return { ...old, pages: newPages };
-        }
-      );
-
-    } catch (err) {
-      console.error('Send message error:', err);
-      setError(err as Error);
-      
-      // Mark message as failed
-      queryClient.setQueryData(
-        queryKeys.messages(currentSessionId),
-        (old: any) => {
-          if (!old) return old;
-          const newPages = old.pages.map((page: any) => ({
-            ...page,
-            items: page.items.map((msg: AIMessage) =>
-              msg.id === `temp_${Date.now()}`
-                ? { ...msg, meta: { ...msg.meta, status: 'failed' } }
-                : msg
-            )
-          }));
-          return { ...old, pages: newPages };
-        }
-      );
-    } finally {
-      setIsSending(false);
-    }
-  }, [currentSessionId, user, isSending, enableStreaming, queryClient]);
-
   // SSE response handler
-  const handleSSEResponse = async (content: string, sessionId: string, idToken: string) => {
+  const handleSSEResponse = useCallback(async (content: string, sessionId: string, idToken: string) => {
     const response = await fetch('/api/ai/copilot/chat', {
       method: 'POST',
       headers: {
@@ -404,7 +313,7 @@ export function useAICopilot(options: UseAICopilotOptions = {}): UseAICopilotRet
               // Add assistant message to cache
               queryClient.setQueryData(
                 queryKeys.messages(sessionId),
-                (old: any) => {
+                (old: InfiniteData<PaginatedMessages> | undefined) => {
                   if (!old) return { pages: [{ items: [finalMessage], hasMore: false, total: 1 }] };
                   const newPages = [...old.pages];
                   if (newPages.length > 0) {
@@ -431,9 +340,9 @@ export function useAICopilot(options: UseAICopilotOptions = {}): UseAICopilotRet
                 // Update streaming message in cache
                 queryClient.setQueryData(
                   queryKeys.messages(sessionId),
-                  (old: any) => {
+                  (old: InfiniteData<PaginatedMessages> | undefined) => {
                     if (!old) return old;
-                    const newPages = old.pages.map((page: any) => ({
+                    const newPages = old.pages.map((page: PaginatedMessages) => ({
                       ...page,
                       items: page.items.map((msg: AIMessage) =>
                         msg.id === assistantMessageId
@@ -456,10 +365,10 @@ export function useAICopilot(options: UseAICopilotOptions = {}): UseAICopilotRet
     } finally {
       reader.releaseLock();
     }
-  };
+  }, [queryClient, caseId]);
 
   // JSON response handler (fallback)
-  const handleJSONResponse = async (content: string, sessionId: string, idToken: string) => {
+  const handleJSONResponse = useCallback(async (content: string, sessionId: string, idToken: string) => {
     const response = await fetch('/api/ai/copilot/chat', {
       method: 'POST',
       headers: {
@@ -492,7 +401,7 @@ export function useAICopilot(options: UseAICopilotOptions = {}): UseAICopilotRet
     // Add assistant message to cache
     queryClient.setQueryData(
       queryKeys.messages(sessionId),
-      (old: any) => {
+      (old: InfiniteData<PaginatedMessages> | undefined) => {
         if (!old) return { pages: [{ items: [assistantMessage], hasMore: false, total: 1 }] };
         const newPages = [...old.pages];
         if (newPages.length > 0) {
@@ -504,7 +413,93 @@ export function useAICopilot(options: UseAICopilotOptions = {}): UseAICopilotRet
         return { ...old, pages: newPages };
       }
     );
-  };
+  }, [queryClient, caseId]);
+
+  // Message sending with SSE streaming
+  const sendMessage = useCallback(async (content: string) => {
+    if (!currentSessionId || !user || isSending) return;
+
+    setIsSending(true);
+    setError(null);
+
+    try {
+      const idToken = await user.getIdToken();
+      
+      // Optimistic update - add user message immediately
+      const userMessage: AIMessage = {
+        id: `temp_${Date.now()}`,
+        sessionId: currentSessionId,
+        author: 'user',
+        content,
+        createdAt: Date.now(),
+        meta: { status: 'sending' }
+      };
+
+      // Add optimistic message to cache
+      queryClient.setQueryData(
+        queryKeys.messages(currentSessionId),
+        (old: InfiniteData<PaginatedMessages> | undefined) => {
+          if (!old) return { pages: [{ items: [userMessage], hasMore: false, total: 1 }] };
+          const newPages = [...old.pages];
+          if (newPages.length > 0) {
+            newPages[0] = {
+              ...newPages[0],
+              items: [userMessage, ...newPages[0].items]
+            };
+          }
+          return { ...old, pages: newPages };
+        }
+      );
+
+      if (enableStreaming && typeof EventSource !== 'undefined') {
+        // Use SSE streaming
+        await handleSSEResponse(content, currentSessionId, idToken);
+      } else {
+        // Fallback to JSON response
+        await handleJSONResponse(content, currentSessionId, idToken);
+      }
+
+      // Mark message as sent
+      queryClient.setQueryData(
+        queryKeys.messages(currentSessionId),
+        (old: InfiniteData<PaginatedMessages> | undefined) => {
+          if (!old) return old;
+          const newPages = old.pages.map((page: PaginatedMessages) => ({
+            ...page,
+            items: page.items.map((msg: AIMessage) =>
+              msg.id === userMessage.id
+                ? { ...msg, meta: { ...msg.meta, status: 'sent' } }
+                : msg
+            )
+          }));
+          return { ...old, pages: newPages };
+        }
+      );
+
+    } catch (err) {
+      console.error('Send message error:', err);
+      setError(err as Error);
+      
+      // Mark message as failed
+      queryClient.setQueryData(
+        queryKeys.messages(currentSessionId),
+        (old: InfiniteData<PaginatedMessages> | undefined) => {
+          if (!old) return old;
+          const newPages = old.pages.map((page: PaginatedMessages) => ({
+            ...page,
+            items: page.items.map((msg: AIMessage) =>
+              msg.id === `temp_${Date.now()}`
+                ? { ...msg, meta: { ...msg.meta, status: 'failed' } }
+                : msg
+            )
+          }));
+          return { ...old, pages: newPages };
+        }
+      );
+    } finally {
+      setIsSending(false);
+    }
+  }, [currentSessionId, user, isSending, enableStreaming, queryClient, handleSSEResponse, handleJSONResponse]);
 
   // Load more messages
   const loadMoreMessages = useCallback(async () => {

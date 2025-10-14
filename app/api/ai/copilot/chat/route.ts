@@ -28,7 +28,7 @@ const SAFE_ASSISTANT_FALLBACK_RESPONSE =
   "I apologize, but I cannot provide a response to that request. Please feel free to ask me about legal processes or procedures, and I'll be happy to help with general information.";
 
 // Custom error class for AI service errors
-export class AIServiceError extends Error {
+class AIServiceError extends Error {
   constructor(
     message: string,
     public statusCode: number = 500,

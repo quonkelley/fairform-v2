@@ -204,8 +204,8 @@ async function summarizeConversation(sessionId: string): Promise<{ summary: stri
     }
     
     const userMessages = messages.items
-      .filter((m: any) => m.author === 'user')
-      .map((m: any) => m.content.substring(0, 50))
+      .filter((m) => m.author === 'user')
+      .map((m) => m.content.substring(0, 50))
       .join(', ');
       
     const summary = userMessages.length > 200 
