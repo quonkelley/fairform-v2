@@ -83,6 +83,9 @@ export interface MessageMeta {
   latencyMs?: number; // Processing time in milliseconds
   blocked?: boolean; // Moderation result
   model?: string; // AI model used (e.g., "gpt-4o-mini")
+  moderation?: {
+    flaggedCategories: string[];
+  };
 }
 
 /**

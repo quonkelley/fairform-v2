@@ -139,6 +139,29 @@ export async function appendMessage(
 }
 
 /**
+ * Update the case association for an existing session
+ *
+ * @param sessionId - Session ID to update
+ * @param caseId - Case identifier to associate (null to clear)
+ * @throws AISessionsRepositoryError if update fails
+ */
+export async function updateSessionCase(
+  sessionId: string,
+  caseId: string | null | undefined
+): Promise<void> {
+  try {
+    const db = getDb();
+    await db.collection(SESSIONS_COLLECTION).doc(sessionId).update({
+      caseId: caseId ?? null,
+      updatedAt: Date.now(),
+    });
+  } catch (error) {
+    console.error("Failed to update AI session case", { sessionId, caseId, error });
+    throw new AISessionsRepositoryError("Unable to update AI session case", { cause: error });
+  }
+}
+
+/**
  * List messages for a session with pagination
  *
  * @param sessionId - Session ID to list messages for
