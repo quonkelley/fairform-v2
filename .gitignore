@@ -39,15 +39,15 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-# # BMAD (local only)
-# .bmad-core/
-# .bmad-*/
-# bmad-core/
-# bmad-claude-integration/
+# BMAD (local only)
+.bmad-core/
+.bmad-*/
+bmad-core/
+bmad-claude-integration/
 
-# # Claude Code configuration
-# .claude/
-# CLAUDE.md
+# Claude Code configuration
+.claude/
+CLAUDE.md
 
 # PRD documentation (local development)
 docs/prd/epic-6-case-journey-map.md
