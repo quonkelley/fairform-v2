@@ -9,6 +9,7 @@ import {
   appendMessage,
   getSession,
   updateSessionCase,
+  listMessages,
 } from "@/lib/db/aiSessionsRepo";
 import type { AISession } from "@/lib/ai/types";
 
@@ -344,11 +345,29 @@ async function handleSSEResponse(
           encoder.encode(`event: meta\ndata: ${JSON.stringify(metaEvent)}\n\n`)
         );
 
-        // Build messages array for OpenAI
+        // Build messages array for OpenAI with conversation history
         const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
           { role: "system", content: buildSystemPrompt() },
-          { role: "user", content: userMessage },
         ];
+
+        // Add conversation history (last 10 messages)
+        try {
+          const messageHistory = await listMessages(session.id, { limit: 10 });
+          // Add messages in chronological order (oldest first)
+          const sortedMessages = [...messageHistory.items].reverse();
+          for (const msg of sortedMessages) {
+            if (msg.author === 'user') {
+              messages.push({ role: 'user', content: msg.content });
+            } else if (msg.author === 'assistant') {
+              messages.push({ role: 'assistant', content: msg.content });
+            }
+          }
+        } catch (error) {
+          console.error('Failed to load message history:', error);
+        }
+
+        // Add current message
+        messages.push({ role: "user", content: userMessage });
 
         // Get OpenAI streaming response with retry coverage
         const completionResponse = await chatCompletionWithRetry(messages, { stream: true });
@@ -503,11 +522,29 @@ async function handleJSONResponse(
   startTime: number
 ): Promise<NextResponse> {
   try {
-    // Build messages array for OpenAI
+    // Build messages array for OpenAI with conversation history
     const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
       { role: "system", content: buildSystemPrompt() },
-      { role: "user", content: userMessage },
     ];
+
+    // Add conversation history (last 10 messages)
+    try {
+      const messageHistory = await listMessages(session.id, { limit: 10 });
+      // Add messages in chronological order (oldest first)
+      const sortedMessages = [...messageHistory.items].reverse();
+      for (const msg of sortedMessages) {
+        if (msg.author === 'user') {
+          messages.push({ role: 'user', content: msg.content });
+        } else if (msg.author === 'assistant') {
+          messages.push({ role: 'assistant', content: msg.content });
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load message history:', error);
+    }
+
+    // Add current message
+    messages.push({ role: "user", content: userMessage });
 
     // Get OpenAI response (non-streaming)
     const completion = await chatCompletionWithRetry(messages) as ChatCompletionResult;
