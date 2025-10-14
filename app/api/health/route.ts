@@ -1,13 +1,17 @@
 import { NextResponse } from "next/server";
 
-import { HealthResponseSchema } from "@/lib/validation";
+import { HealthResponseSchema, type HealthResponse } from "@/lib/validation";
+import { isDemoMode } from "@/lib/config/demo";
 
 // GET /api/health - Health check endpoint
 export async function GET() {
   try {
-    const response = HealthResponseSchema.parse({
+    const payload: HealthResponse = {
       ok: true,
-    });
+      demo: isDemoMode(),
+      timestamp: new Date().toISOString(),
+    };
+    const response = HealthResponseSchema.parse(payload);
 
     return NextResponse.json(response, { status: 200 });
   } catch (error) {

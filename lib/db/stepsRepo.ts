@@ -22,7 +22,6 @@ interface FirebaseTimestamp {
 }
 
 // Note: Using Firestore's UpdateData type for update operations
-
 const COLLECTION_NAME = "caseSteps";
 
 export async function listByCase(caseId: string): Promise<CaseStep[]> {

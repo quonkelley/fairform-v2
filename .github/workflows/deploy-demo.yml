@@ -1,0 +1,104 @@
+name: Deploy Demo Environment
+
+on:
+  push:
+    branches:
+      - demo
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'demo'
+        type: choice
+        options:
+          - demo
+
+jobs:
+  deploy-demo:
+    name: Deploy to Demo Environment
+    runs-on: ubuntu-latest
+    environment: demo
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run type checking
+        run: npm run type-check
+
+      - name: Run linting
+        run: npm run lint
+
+      - name: Run tests
+        run: npm test -- --run
+        env:
+          NEXT_PUBLIC_DEMO_MODE: 'true'
+
+      - name: Build application
+        run: npm run build
+        env:
+          # Demo mode flag
+          NEXT_PUBLIC_DEMO_MODE: 'true'
+
+          # Demo Firebase client config
+          NEXT_PUBLIC_FIREBASE_DEMO_PROJECT_ID: ${{ secrets.DEMO_FIREBASE_PROJECT_ID }}
+          NEXT_PUBLIC_FIREBASE_DEMO_API_KEY: ${{ secrets.DEMO_FIREBASE_API_KEY }}
+          NEXT_PUBLIC_FIREBASE_DEMO_AUTH_DOMAIN: ${{ secrets.DEMO_FIREBASE_AUTH_DOMAIN }}
+          NEXT_PUBLIC_FIREBASE_DEMO_STORAGE_BUCKET: ${{ secrets.DEMO_FIREBASE_STORAGE_BUCKET }}
+          NEXT_PUBLIC_FIREBASE_DEMO_MESSAGING_SENDER_ID: ${{ secrets.DEMO_FIREBASE_MESSAGING_SENDER_ID }}
+          NEXT_PUBLIC_FIREBASE_DEMO_APP_ID: ${{ secrets.DEMO_FIREBASE_APP_ID }}
+
+          # Demo Firebase admin config (for API routes)
+          FIREBASE_DEMO_PROJECT_ID: ${{ secrets.DEMO_FIREBASE_PROJECT_ID }}
+          FIREBASE_DEMO_CLIENT_EMAIL: ${{ secrets.DEMO_FIREBASE_CLIENT_EMAIL }}
+          FIREBASE_DEMO_PRIVATE_KEY: ${{ secrets.DEMO_FIREBASE_PRIVATE_KEY }}
+
+      - name: Deploy to Vercel (Demo)
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_DEMO_PROJECT_ID }}
+          vercel-args: '--prod'
+          scope: ${{ secrets.VERCEL_ORG_ID }}
+        env:
+          VERCEL_ENV: production
+
+      - name: Health check
+        run: |
+          echo "Waiting for deployment to be ready..."
+          sleep 30
+
+          # Check if the deployment is accessible
+          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" ${{ secrets.DEMO_URL }}/api/health || echo "000")
+
+          if [ "$RESPONSE" = "200" ]; then
+            echo "✅ Demo deployment is healthy"
+          else
+            echo "⚠️  Demo deployment health check returned: $RESPONSE"
+            exit 1
+          fi
+
+      - name: Notify deployment success
+        if: success()
+        run: |
+          echo "🎉 Demo deployment successful!"
+          echo "Demo URL: ${{ secrets.DEMO_URL }}"
+          echo "Deployment time: $(date)"
+
+      - name: Notify deployment failure
+        if: failure()
+        run: |
+          echo "❌ Demo deployment failed"
+          echo "Please check the logs for details"
+          exit 1

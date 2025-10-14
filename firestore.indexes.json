@@ -43,16 +43,16 @@
       ]
     },
     {
-      "collectionGroup": "reminders",
+      "collectionGroup": "aiSessions",
       "queryScope": "COLLECTION",
       "fields": [
         {
-          "fieldPath": "sent",
+          "fieldPath": "userId",
           "order": "ASCENDING"
         },
         {
-          "fieldPath": "dueDate",
-          "order": "ASCENDING"
+          "fieldPath": "lastMessageAt",
+          "order": "DESCENDING"
         }
       ]
     }

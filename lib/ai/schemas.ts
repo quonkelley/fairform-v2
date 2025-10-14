@@ -33,3 +33,50 @@ export const IntakeClassificationSchema = z.object({
 
 export type IntakeRequest = z.infer<typeof IntakeRequestSchema>;
 export type IntakeClassification = z.infer<typeof IntakeClassificationSchema>;
+
+// Chat API schemas for Story 13.2
+export const ChatRequestSchema = z.object({
+  message: z
+    .string({ message: "Message is required" })
+    .min(1, "Message cannot be empty")
+    .max(2000, "Message too long (max 2000 characters)"),
+  sessionId: z.string().optional(),
+  caseId: z.string().optional(),
+  demo: z.boolean().optional(),
+});
+
+export const ChatResponseSchema = z.object({
+  sessionId: z.string(),
+  messageId: z.string(),
+  reply: z.string(),
+  meta: z.object({
+    tokensIn: z.number(),
+    tokensOut: z.number(),
+    latencyMs: z.number(),
+    model: z.string(),
+  }),
+});
+
+// SSE event schemas
+export const SSEMetaEventSchema = z.object({
+  sessionId: z.string(),
+  messageId: z.string(),
+  model: z.string(),
+  startedAt: z.number(),
+});
+
+export const SSEDeltaEventSchema = z.object({
+  chunk: z.string(),
+});
+
+export const SSEDoneEventSchema = z.object({
+  tokensIn: z.number(),
+  tokensOut: z.number(),
+  latencyMs: z.number(),
+});
+
+export type ChatRequest = z.infer<typeof ChatRequestSchema>;
+export type ChatResponse = z.infer<typeof ChatResponseSchema>;
+export type SSEMetaEvent = z.infer<typeof SSEMetaEventSchema>;
+export type SSEDeltaEvent = z.infer<typeof SSEDeltaEventSchema>;
+export type SSEDoneEvent = z.infer<typeof SSEDoneEventSchema>;
