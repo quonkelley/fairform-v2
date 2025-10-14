@@ -5,10 +5,7 @@ import {
   useQuery, 
   useMutation, 
   useInfiniteQuery, 
-  useQueryClient,
-  type UseQueryResult,
-  type UseMutationResult,
-  type UseInfiniteQueryResult
+  useQueryClient
 } from '@tanstack/react-query';
 import { useAuth } from '@/components/auth/auth-context';
 import type { 
@@ -139,7 +136,7 @@ export function useAICopilot(options: UseAICopilotOptions = {}): UseAICopilotRet
   }, [user]);
 
   // Session query
-  const sessionQuery: UseQueryResult<AISession | null, Error> = useQuery({
+  const sessionQuery = useQuery({
     queryKey: queryKeys.session(currentSessionId || 'current'),
     queryFn: async () => {
       if (!currentSessionId || !user) return null;
@@ -160,14 +157,10 @@ export function useAICopilot(options: UseAICopilotOptions = {}): UseAICopilotRet
     enabled: !!currentSessionId && !!user && !isDemoMode,
     staleTime: 5 * 60 * 1000, // 5 minutes
     retry: 3,
-    onError: (err) => {
-      console.error('Session query error:', err);
-      setError(err as Error);
-    },
   });
 
   // Messages query (infinite)
-  const messagesQuery: UseInfiniteQueryResult<PaginatedMessages, Error> = useInfiniteQuery({
+  const messagesQuery = useInfiniteQuery({
     queryKey: queryKeys.messages(currentSessionId || ''),
     queryFn: async ({ pageParam }) => {
       if (!currentSessionId || !user) {
@@ -177,8 +170,11 @@ export function useAICopilot(options: UseAICopilotOptions = {}): UseAICopilotRet
       const idToken = await user.getIdToken();
       const params = new URLSearchParams({
         limit: '20',
-        ...(pageParam && { after: pageParam.toString() }),
       });
+      
+      if (pageParam && typeof pageParam === 'string') {
+        params.set('after', pageParam);
+      }
 
       const response = await fetch(`/api/ai/sessions/${currentSessionId}/messages?${params}`, {
         headers: {
@@ -202,15 +198,11 @@ export function useAICopilot(options: UseAICopilotOptions = {}): UseAICopilotRet
     enabled: !!currentSessionId && !!user && !isDemoMode,
     staleTime: 30 * 1000, // 30 seconds
     retry: 2,
-    onError: (err) => {
-      console.error('Messages query error:', err);
-      setError(err as Error);
-    },
   });
 
   // Create session mutation
-  const createSessionMutation: UseMutationResult<string, Error, CreateSessionOptions> = useMutation({
-    mutationFn: async (options: CreateSessionOptions) => {
+  const createSessionMutation = useMutation({
+    mutationFn: async (options: CreateSessionOptions = {}) => {
       if (!user) throw new Error('User not authenticated');
 
       const idToken = await user.getIdToken();
@@ -533,7 +525,7 @@ export function useAICopilot(options: UseAICopilotOptions = {}): UseAICopilotRet
 
   // Update context
   const updateContext = useCallback((newContext: Partial<AIPromptContext>) => {
-    setContext(prev => ({ ...prev, ...newContext }));
+    setContext(prev => prev ? { ...prev, ...newContext } : newContext as AIPromptContext);
   }, []);
 
   // Reconnect
@@ -561,7 +553,7 @@ export function useAICopilot(options: UseAICopilotOptions = {}): UseAICopilotRet
     // Session management
     session: sessionQuery.data || null,
     sessionId: currentSessionId,
-    createSession: createSessionMutation.mutateAsync,
+    createSession: (options?: CreateSessionOptions) => createSessionMutation.mutateAsync(options || {}),
     switchSession,
     
     // Message management

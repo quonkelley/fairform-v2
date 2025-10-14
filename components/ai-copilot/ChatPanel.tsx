@@ -42,19 +42,11 @@ const panelVariants = {
     opacity: 1,
     scale: 1,
     y: 0,
-    transition: {
-      duration: 0.2,
-      ease: 'easeOut',
-    },
   },
   exit: {
     opacity: 0,
     scale: 0.95,
     y: 20,
-    transition: {
-      duration: 0.15,
-      ease: 'easeIn',
-    },
   },
 };
 
@@ -88,10 +80,6 @@ const messageVariants = {
     opacity: 1,
     y: 0,
     scale: 1,
-    transition: {
-      duration: 0.2,
-      ease: 'easeOut',
-    },
   },
 };
 
@@ -160,6 +148,10 @@ const MessageBubble: React.FC<{ message: Message }> = ({ message }) => {
       variants={messageVariants}
       initial="hidden"
       animate="visible"
+      transition={{
+        duration: 0.2,
+        ease: "easeOut",
+      }}
       className={cn(
         'flex mb-4',
         isUser ? 'justify-end' : 'justify-start'
@@ -273,7 +265,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  const eventSourceRef = useRef<EventSource | null>(null);
+  // const eventSourceRef = useRef<EventSource | null>(null);
 
   // Auto-scroll to bottom when new messages arrive
   const scrollToBottom = useCallback(() => {
@@ -345,7 +337,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
   };
 
   const handleSSEResponse = async (userMessage: Message) => {
-    const response = await fetch('/api/ai/copilot/chat', {
+    let response = await fetch('/api/ai/copilot/chat', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -358,10 +350,66 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
       }),
     });
 
+    // Fallback to demo endpoint if main API fails
+    if (!response.ok) {
+      console.log('Main API failed, trying demo endpoint...');
+      response = await fetch('/api/ai/copilot/demo', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: userMessage.content,
+          sessionId,
+        }),
+      });
+    }
+
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
+    // Check if response is JSON (demo endpoint) or SSE (main API)
+    const contentType = response.headers.get('content-type') || '';
+    console.log('Response content type:', contentType);
+    
+    if (contentType.includes('application/json')) {
+      console.log('Handling JSON response from demo endpoint');
+      // Handle JSON response from demo endpoint
+      const data = await response.json();
+      
+      // Mark user message as sent
+      setMessages(prev => 
+        prev.map(msg => 
+          msg.id === userMessage.id 
+            ? { ...msg, status: 'sent' as const }
+            : msg
+        )
+      );
+
+      // Add assistant response
+      const assistantMessage: Message = {
+        id: data.messageId || `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        author: 'assistant',
+        content: data.reply || 'Sorry, I could not process your request.',
+        timestamp: Date.now(),
+        status: 'sent',
+      };
+
+      setMessages(prev => 
+        prev.map(msg => 
+          msg.id === userMessage.id 
+            ? { ...msg, status: 'sent' as const }
+            : msg
+        ).concat(assistantMessage)
+      );
+
+      setIsTyping(false);
+      setIsLoading(false);
+      return;
+    }
+
+    // Handle SSE response from main API
     const reader = response.body?.getReader();
     const decoder = new TextDecoder();
 
@@ -442,7 +490,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
   };
 
   const handleJSONResponse = async (userMessage: Message) => {
-    const response = await fetch('/api/ai/copilot/chat', {
+    let response = await fetch('/api/ai/copilot/chat', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -453,6 +501,21 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         caseId,
       }),
     });
+
+    // Fallback to demo endpoint if main API fails
+    if (!response.ok) {
+      console.log('Main API failed, trying demo endpoint...');
+      response = await fetch('/api/ai/copilot/demo', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: userMessage.content,
+          sessionId,
+        }),
+      });
+    }
 
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -508,6 +571,10 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
           initial="hidden"
           animate="visible"
           exit="exit"
+          transition={{
+            duration: 0.2,
+            ease: "easeOut",
+          }}
           className={cn(
             'bg-white rounded-lg shadow-xl w-full max-w-md sm:max-w-lg lg:max-w-xl h-[80vh] sm:h-[600px] flex flex-col',
             className

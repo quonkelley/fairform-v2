@@ -83,6 +83,7 @@ export interface MessageMeta {
   latencyMs?: number; // Processing time in milliseconds
   blocked?: boolean; // Moderation result
   model?: string; // AI model used (e.g., "gpt-4o-mini")
+  status?: 'sending' | 'sent' | 'failed'; // Message delivery status
   moderation?: {
     flaggedCategories: string[];
   };
@@ -133,11 +134,13 @@ export interface GlossaryTerm {
  * Full context structure passed to AI for generating responses
  */
 export interface AIPromptContext {
-  user: UserContext;
+  user?: UserContext;
   case?: CaseContext;
-  summary: string; // Concise narrative from allowlisted fields
+  summary?: string; // Concise narrative from allowlisted fields
   glossaryTerms?: GlossaryTerm[];
-  fingerprint: string; // SHA-256 for caching/ETag
+  fingerprint?: string; // SHA-256 for caching/ETag
+  caseType?: CaseType;
+  caseId?: string;
 }
 
 /**

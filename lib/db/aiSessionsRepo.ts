@@ -20,10 +20,14 @@ import type {
   AIMessage,
   CreateSessionInput,
   AppendMessageInput,
-  ListMessagesOptions,
-  PaginatedMessages,
   ContextSnapshot,
 } from "@/lib/ai/types";
+
+// Re-export types for external use
+export type { ListMessagesOptions, PaginatedMessages } from "@/lib/ai/types";
+
+// Import the types for internal use
+import type { ListMessagesOptions, PaginatedMessages } from "@/lib/ai/types";
 
 /**
  * Custom error class for AI Sessions repository operations
