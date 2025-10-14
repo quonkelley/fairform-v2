@@ -1,7 +1,6 @@
 "use client";
 
 import { Progress } from "@/components/ui/progress";
-import type { CaseType } from "@/lib/validation";
 
 export interface ProgressOverviewProps {
   progressPct: number;

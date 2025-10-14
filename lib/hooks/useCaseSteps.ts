@@ -30,7 +30,7 @@ export function useCaseSteps(caseId: string): UseQueryResult<CaseStep[], Error> 
       const data = await response.json();
 
       // Parse dates from the API response
-      return data.map((step: any) => ({
+      return (data as CaseStep[]).map((step) => ({
         ...step,
         dueDate: step.dueDate ? new Date(step.dueDate) : null,
         completedAt: step.completedAt ? new Date(step.completedAt) : null,

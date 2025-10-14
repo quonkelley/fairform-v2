@@ -15,6 +15,12 @@ export class RemindersRepositoryError extends Error {
   }
 }
 
+// Interface for Firebase Admin SDK Timestamp
+interface FirebaseTimestamp {
+  toDate: () => Date;
+  _seconds: number;
+}
+
 const COLLECTION_NAME = "reminders";
 
 export async function createReminder(input: CreateReminderInput & { userId: string }): Promise<Reminder> {
@@ -134,14 +140,14 @@ function resolveTimestamp(value: unknown): Date | null {
 
   // Admin SDK Timestamp has toDate() method
   if (value && typeof value === "object" && "toDate" in value && typeof value.toDate === "function") {
-    return (value as any).toDate();
+    return (value as FirebaseTimestamp).toDate();
   }
   if (value instanceof Date) {
     return value;
   }
   // Admin SDK Timestamp also has _seconds property
   if (value && typeof value === "object" && "_seconds" in value) {
-    return new Date((value as any)._seconds * 1000);
+    return new Date((value as FirebaseTimestamp)._seconds * 1000);
   }
   if (typeof value === "number") {
     return new Date(value);

@@ -35,7 +35,7 @@ export function useUserCases(
       const data = await response.json();
 
       // Parse dates from the API response
-      return data.map((caseData: any) => ({
+      return (data as CaseRecord[]).map((caseData) => ({
         ...caseData,
         createdAt: new Date(caseData.createdAt),
         updatedAt: new Date(caseData.updatedAt),

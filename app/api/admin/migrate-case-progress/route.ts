@@ -13,7 +13,7 @@ import { calculateCaseProgress } from "@/lib/db/casesRepo";
 export async function POST(request: NextRequest) {
   try {
     // Authenticate user (add admin check in production)
-    const user = await requireAuth(request);
+    await requireAuth(request);
 
     // TODO: In production, verify user is admin
     // For now, any authenticated user can run this

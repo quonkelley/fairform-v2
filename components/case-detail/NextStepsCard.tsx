@@ -26,7 +26,7 @@ export function NextStepsCard({ caseType, currentStep }: NextStepsCardProps) {
       <div className="mb-4 space-y-1">
         <h2 className="text-xl font-bold text-foreground">Your Next Steps</h2>
         <p className="text-sm text-muted-foreground">
-          Here's what you need to do next for your {formattedCaseType} case
+          Here&apos;s what you need to do next for your {formattedCaseType} case
         </p>
       </div>
 
@@ -63,7 +63,7 @@ export function NextStepsCard({ caseType, currentStep }: NextStepsCardProps) {
 
       {/* Next Steps List */}
       {!isLoading && !isError && nextSteps && nextSteps.length > 0 && (
-        <ul className="space-y-3" role="list">
+        <ul className="space-y-3">
           {nextSteps.map((step, index) => (
             <NextStepItem key={step.id} step={step} index={index} />
           ))}

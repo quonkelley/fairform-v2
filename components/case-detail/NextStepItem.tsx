@@ -1,4 +1,4 @@
-import { CheckCircle2, Clock } from "lucide-react";
+import { Clock } from "lucide-react";
 import type { NextStep } from "@/lib/nextSteps/generate";
 
 export interface NextStepItemProps {
