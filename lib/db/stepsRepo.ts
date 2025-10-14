@@ -21,12 +21,7 @@ interface FirebaseTimestamp {
   _seconds: number;
 }
 
-// Type for Firestore update data with FieldValue support
-interface UpdateData {
-  isComplete: boolean;
-  updatedAt: ReturnType<typeof FieldValue.serverTimestamp>;
-  completedAt: ReturnType<typeof FieldValue.serverTimestamp> | null;
-}
+// Note: Using Firestore's UpdateData type for update operations
 
 const COLLECTION_NAME = "caseSteps";
 
@@ -90,7 +85,7 @@ export async function updateStepCompletion(
   try {
     const db = getDb();
 
-    const updateData: UpdateData = {
+    const updateData = {
       isComplete: input.isComplete,
       updatedAt: FieldValue.serverTimestamp(),
       completedAt: input.isComplete ? FieldValue.serverTimestamp() : null,
