@@ -62,6 +62,19 @@ export function AppHeader() {
                 </Link>
               </li>
               <li>
+                <Link
+                  href="/intake"
+                  className={`inline-flex h-9 items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+                    isActive('/intake')
+                      ? 'bg-accent text-accent-foreground'
+                      : 'text-muted-foreground'
+                  }`}
+                  aria-current={isActive('/intake') ? 'page' : undefined}
+                >
+                  Quick Form
+                </Link>
+              </li>
+              <li>
                 <span
                   className="inline-flex h-9 items-center justify-center rounded-md px-4 py-2 text-sm font-medium text-muted-foreground/50 cursor-not-allowed"
                   aria-disabled="true"
@@ -119,6 +132,19 @@ export function AppHeader() {
               aria-current={isActive('/dashboard') ? 'page' : undefined}
             >
               Dashboard
+            </Link>
+          </li>
+          <li className="flex-1">
+            <Link
+              href="/intake"
+              className={`flex h-10 w-full items-center justify-center rounded-md text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+                isActive('/intake')
+                  ? 'bg-accent text-accent-foreground'
+                  : 'text-muted-foreground'
+              }`}
+              aria-current={isActive('/intake') ? 'page' : undefined}
+            >
+              Form
             </Link>
           </li>
           <li className="flex-1">
