@@ -253,7 +253,7 @@ const ConnectionStatusIndicator: React.FC<{ status: ConnectionStatus }> = ({ sta
 export const ChatPanel: React.FC<ChatPanelProps> = ({
   isOpen,
   onClose,
-  sessionId,
+  sessionId: initialSessionId,
   caseId,
   connectionStatus,
   className,
@@ -262,6 +262,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [sessionId, setSessionId] = useState<string | undefined>(initialSessionId);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -337,6 +338,8 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
   };
 
   const handleSSEResponse = async (userMessage: Message) => {
+    console.log('Sending message with sessionId:', sessionId);
+    
     let response = await fetch('/api/ai/copilot/chat', {
       method: 'POST',
       headers: {
@@ -377,6 +380,12 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
       console.log('Handling JSON response from demo endpoint');
       // Handle JSON response from demo endpoint
       const data = await response.json();
+      
+      // Store sessionId for subsequent requests
+      if (data.sessionId && !sessionId) {
+        console.log('Storing sessionId for future requests:', data.sessionId);
+        setSessionId(data.sessionId);
+      }
       
       // Mark user message as sent
       setMessages(prev => 
@@ -523,6 +532,12 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
 
     const data = await response.json();
 
+    // Store sessionId for subsequent requests
+    if (data.sessionId && !sessionId) {
+      console.log('Storing sessionId for future requests:', data.sessionId);
+      setSessionId(data.sessionId);
+    }
+
     // Mark user message as sent
     setMessages(prev => 
       prev.map(msg => 
@@ -534,9 +549,9 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
 
     // Add assistant response
     const assistantMessage: Message = {
-      id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      id: data.messageId || `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       author: 'assistant',
-      content: data.message || data.content || 'I understand your question. Please consult with an attorney for legal advice.',
+      content: data.reply || data.message || data.content || 'I understand your question. Please consult with an attorney for legal advice.',
       timestamp: Date.now(),
       status: 'sent',
     };

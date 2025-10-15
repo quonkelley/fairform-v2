@@ -12,7 +12,9 @@ Start here if you’re a developer (human or AI assistant in Cursor) joining the
 
 - 📘 **Project Brief:** [`PROJECT_BRIEF.md`](./PROJECT_BRIEF.md)
 - 🧭 **PRD Overview:** [`docs/prd.md`](./docs/prd.md)
-- 📂 **Epics:** [`docs/prd/`](./docs/prd/)
+- 🤖 **Epic 13 (Current Sprint):** [`docs/prd/epic-13-ai-copilot.md`](./docs/prd/epic-13-ai-copilot.md)
+- 📝 **Session Handoff:** [`docs/HANDOFF-NEXT-SESSION.md`](./docs/HANDOFF-NEXT-SESSION.md)
+- 📂 **All Epics:** [`docs/prd/`](./docs/prd/)
 - 🎨 **Design Specification:** [`docs/design-spec.md`](./docs/design-spec.md)
 - 🏗️ **Architecture Hub:** [`docs/architecture.md`](./docs/architecture.md)
 - 🗂️ **Stories in Progress:** [`docs/stories/`](./docs/stories/)
@@ -195,17 +197,26 @@ Rollback via Vercel “Promote previous build”.
 
 ## **10\) Current Sprint**
 
-See: [`/docs/04_SprintBacklogs/Sprint2_Backlog.md`](https://chatgpt.com/g/g-68c0bfee309c8191898bf526c849e458-bglad/c/docs/04_SprintBacklogs/Sprint2_Backlog.md)
+See: [`docs/SPRINT-3-MASTER-PLAN.md`](./docs/SPRINT-3-MASTER-PLAN.md) | [`docs/HANDOFF-NEXT-SESSION.md`](./docs/HANDOFF-NEXT-SESSION.md)
 
-**Sprint Goal:** Interactive Case Journey \+ Inline Glossary
+**Sprint 3 - Epic 13: AI Copilot & Dynamic Intake Experience**
 
-* Journey Stepper component & data wiring
+**Completed This Sprint:**
+* ✅ AI Copilot conversation state management
+* ✅ Context-aware conversation flow (greeting → intake → details → guidance)
+* ✅ Session tracking and persistence
+* ✅ Demo mode for testing without OpenAI
+* ✅ Stories 13.1-13.7 implemented
 
-* Step detail modal \+ complete action
+**In Progress:**
+* 🔄 Creating Stories 13.21-13.25 (Case Creation from Copilot)
+* 🔄 Seamless Copilot → Intake integration
+* 🔄 Intent detection for case creation readiness
 
-* Glossary tooltip parsing \+ mobile tap targets
-
-* Progress sync to Dashboard
+**Reference Documents:**
+* Epic PRD: [`docs/prd/epic-13-ai-copilot.md`](./docs/prd/epic-13-ai-copilot.md)
+* Architecture: [`docs/epic-13-unified-architecture-specification.md`](./docs/epic-13-unified-architecture-specification.md)
+* Stories: [`docs/stories/13.*.md`](./docs/stories/)
 
 ---
 
