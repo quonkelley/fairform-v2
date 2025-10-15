@@ -10,10 +10,11 @@
 
 **Epic 13: AI Copilot & Dynamic Intake Experience** - Implementing 3-week roadmap for demo readiness.
 
-**Stories Created:** 25 of 25 total stories (100% complete! 🎉) ✅
-**Stories Implemented:** 7 of 25 stories (28% complete)
+**Epic 13 Stories:** 21 active stories (4 moved to Epic 14) ✅
+**Stories Implemented:** 7 of 21 stories (33% complete)
 **Week 1 Progress:** 7 of 7 stories complete (100%) ✅
-**Status:** ✅ ALL STORIES CREATED - Ready for Implementation
+**Status:** ✅ STORIES CREATED - VALUE-FIRST STRATEGY ACTIVE
+**Strategic Focus:** Demo-ready functionality over security compliance
 
 **Recent Updates (Oct 14):**
 - ✅ Completed Week 1 Foundation (Stories 13.1-13.7)
@@ -23,8 +24,9 @@
 - ✅ **NEW: Created Story 13.23 - Connect Copilot to Intake API** (Draft)
 - ✅ **NEW: Created Story 13.24 - Redesign /intake Page as Quick Form** (Draft)
 - ✅ **NEW: Created Story 13.25 - Intelligent Context Passing** (Draft)
-- 🎉 **MILESTONE: All 25 Epic 13 stories created!**
-- 🎯 Next Priority: Begin implementation of stories 13.21-13.25
+- 🎯 **STRATEGIC PIVOT: Value-first approach for demo**
+- 🚫 **Moved stories 13.14-13.17 to Epic 14 (Security & Compliance)**
+- 🔥 **HIGHEST PRIORITY: Case Creation Flow (13.21-13.25)**
 
 ---
 
@@ -49,16 +51,16 @@
 12. **13.12** - Session Lifecycle Management ✅
 13. **13.13** - Context Fingerprint Caching ✅
 
-### **Week 3 - Security & Compliance (4 stories)**
-14. **13.14** - Firestore Security Rules ✅
-15. **13.15** - Content Moderation Enhancement ✅
-16. **13.16** - Disclaimer System ✅
-17. **13.17** - PII Redaction ✅
+### **Week 3 - Demo Polish (3 stories)**
+18. **13.18** - Demo Environment Configuration ✅ 📋 **PHASE 3**
+19. **13.19** - Performance Testing ✅ 📋 **PHASE 3**
+20. **13.20** - Accessibility & E2E Testing ✅ 📋 **PHASE 3**
 
-### **Week 3 - Final Polish (3 stories)**
-18. **13.18** - Demo Environment Configuration ✅
-19. **13.19** - Performance Testing ✅
-20. **13.20** - Accessibility & E2E Testing ✅
+### **🚫 Moved to Epic 14: Security & Compliance (4 stories - DEFERRED)**
+~~14. **13.14** - Firestore Security Rules~~ → **Epic 14.1** (Post-demo)
+~~15. **13.15** - Content Moderation Enhancement~~ → **Epic 14.2** (Post-demo)
+~~16. **13.16** - Disclaimer System~~ → **Epic 14.3** (Post-demo)
+~~17. **13.17** - PII Redaction~~ → **Epic 14.4** (Post-demo)
 
 ### **Week 2-3 - Case Creation Integration (5 NEW stories)**
 21. **13.21** - Case Creation Intent Detection ✅ 📋 **CREATED** (Draft, Oct 14)
@@ -229,34 +231,50 @@ All story files are located in `docs/stories/`:
 
 **✅ Week 1 COMPLETE - All Foundation Stories Implemented (13.1-13.7)**
 
-**📋 SESSION COMPLETE - ALL STORIES CREATED! 🎉**
+**📋 SESSION COMPLETE - STRATEGIC ROADMAP DEFINED! 🎉**
 1. ✅ **COMPLETED:** Story 13.21 - Case Creation Intent Detection (Draft created)
 2. ✅ **COMPLETED:** Story 13.22 - Case Creation Confirmation UI (Draft created)
 3. ✅ **COMPLETED:** Story 13.23 - Connect Copilot to Intake API (Draft created)
 4. ✅ **COMPLETED:** Story 13.24 - Redesign /intake Page as Quick Form (Draft created)
 5. ✅ **COMPLETED:** Story 13.25 - Intelligent Context Passing (Draft created)
-6. 🎖️ **MILESTONE ACHIEVED:** All 25 Epic 13 stories are now created and documented
-7. 🤖 **Agent:** Sarah (Product Owner)
+6. 🎯 **STRATEGIC DECISION:** Value-first approach for demo/investor presentations
+7. 🚫 **DEFERRED:** Security stories moved to Epic 14 (post-demo)
+8. 🤖 **Agents:** Sarah (PO) & Mary (PM)
 
-**Story Creation Summary:**
-- ✅ Stories 13.1-13.7: Foundation (Week 1)
-- ✅ Stories 13.8-13.13: Advanced Features (Week 2)
-- ✅ Stories 13.14-13.20: Security & Polish (Week 3)
-- ✅ Stories 13.21-13.25: Case Creation Integration (NEW)
-- **Total:** 25 comprehensive, implementation-ready stories
+**Epic 13 - VALUE-FOCUSED (21 stories):**
+- ✅ **PHASE 1 (HIGHEST PRIORITY):** Case Creation Flow (13.21-13.25) 🔥
+- ✅ **PHASE 2 (HIGH VALUE):** Enhanced Experience (13.8-13.13) 💎
+- ✅ **PHASE 3 (DEMO POLISH):** Quality & Testing (13.18-13.20) ✨
+- ✅ **DONE:** Foundation (13.1-13.7) ✅
 
-**Week 2 Priorities (Advanced Features):**
-1. Implement Story 13.8: Conversation Summarization
-2. Implement Story 13.9: Message Pagination API
-3. Implement Story 13.10: Context Snapshot System
-4. Implement Story 13.11: Glossary Integration
-5. Implement Story 13.12: Session Lifecycle Management
-6. Implement Story 13.13: Context Fingerprint Caching
+**Epic 14 - Security & Compliance (4 stories - DEFERRED):**
+- 🚫 Stories 13.14-13.17 moved to Epic 14 for post-demo implementation
 
-**Week 3 Priorities (Security & Polish):**
-1. Implement Stories 13.14-13.20 (Security, compliance, testing)
-2. Complete accessibility and E2E testing
-3. Final QA review and demo preparation
+**PHASE 1 - Case Creation (IMPLEMENT FIRST - 1 week):**
+1. 🔥 Implement Story 13.21: Case Creation Intent Detection
+2. 🔥 Implement Story 13.22: Case Creation Confirmation UI
+3. 🔥 Implement Story 13.23: Connect Copilot to Intake API
+4. 🔥 Implement Story 13.24: Redesign /intake Page
+5. 🔥 Implement Story 13.25: Intelligent Context Passing
+**OUTCOME:** "Watch me create a case just by talking" - THE WOW DEMO
+
+**PHASE 2 - Enhanced Experience (IMPLEMENT NEXT - 1 week):**
+1. 💎 Implement Story 13.11: Glossary Integration (HIGH VISIBILITY)
+2. 💎 Implement Story 13.8: Conversation Summarization
+3. 💎 Implement Story 13.9: Message Pagination API
+4. 💎 Implement Story 13.13: Context Fingerprint Caching
+5. 💎 Implement Story 13.10: Context Snapshot System
+6. 💎 Implement Story 13.12: Session Lifecycle Management
+**OUTCOME:** Premium feel, educational features, enterprise-ready
+
+**PHASE 3 - Demo Polish (FINAL - 2-3 days):**
+1. ✨ Implement Story 13.18: Demo Environment Configuration
+2. ✨ Implement Story 13.19: Performance Testing
+3. ✨ Implement Story 13.20: Accessibility & E2E Testing
+**OUTCOME:** "This is production-quality, not a prototype"
+
+**Epic 14 - Security & Compliance (POST-DEMO):**
+- Stories 14.1-14.4 (was 13.14-13.17) - Implement before production launch
 
 ---
 

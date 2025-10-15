@@ -1,9 +1,28 @@
 # Handoff Document for Next Chat Session
 
-**Date:** October 14, 2025  
-**Current Session Agent:** Sarah (Product Owner)  
-**Status:** ✅ ALL STORIES CREATED - Ready for Implementation  
+**Date:** October 14, 2025
+**Updated:** October 15, 2025 (Roadmap documentation consolidated)
+**Current Session Agent:** Sarah (Product Owner)
+**Status:** ✅ ALL STORIES CREATED - Ready for Implementation
 **Priority:** HIGH - Case Creation Integration Implementation
+
+---
+
+## 📚 Strategic Roadmap Context
+
+**VALUE-FIRST APPROACH:** The project follows a value-first demo strategy. See comprehensive roadmap documentation:
+
+- **`docs/STRATEGIC-ROADMAP-VALUE-FIRST.md`** - Complete strategic decision rationale, phased approach, and demo scripts
+- **`docs/FAIRFORM_VALUE_FIRST_DEMO_ROADMAP.md`** - Epic sequencing and implementation timeline
+- **`docs/The_New_Flow_Experience-Level-Shift.md`** - UX evolution with "Act" phase addition
+- **`docs/fairform_ux_journey_map.md`** - Visual interaction blueprint and emotional arc
+- **`docs/Recommended roadmap tweaks (surgical) (2).md`** - Implementation details and acceptance criteria updates
+
+**Key Epics:**
+- **Epic 13:** AI Copilot (21 stories) - Active implementation
+- **Epic 14:** Security & Compliance (4 stories) - Deferred post-demo (PRD: `docs/prd/epic-14-security-compliance.md`)
+- **Epic 15-17:** Case Lookup, Deadlines, Hearing Mode - Planned
+- **Epic 18:** Smart Form Filler (NEW) - Phase 6 (PRD: `docs/prd/epic-18-smart-form-filler.md`)
 
 ---
 
@@ -88,92 +107,149 @@ components/ai-copilot/
 
 ---
 
-## 📊 Epic 13 Complete Status
+## 📊 Epic 13 Revised Status - VALUE-FIRST FOCUS
 
-**Stories:** 25 of 25 (100%) ✅
+**Epic 13 Stories:** 21 of 25 (4 moved to Epic 14) ✅
 
-### Week 1 - Foundation (7 stories) - **IMPLEMENTED** ✅
-1. AI Sessions Repository ✅
-2. Chat API with SSE Streaming ✅
-3. Context Builder with Fingerprinting ✅
-4. Demo Firebase Project Setup ✅
-5. Chat Widget UI Component ✅
-6. Chat Panel Component ✅
-7. useAICopilot Hook ✅
+### ✅ Week 1 - Foundation (7 stories) - **IMPLEMENTED**
+1. AI Sessions Repository ✅ **DONE**
+2. Chat API with SSE Streaming ✅ **DONE**
+3. Context Builder with Fingerprinting ✅ **DONE**
+4. Demo Firebase Project Setup ✅ **DONE**
+5. Chat Widget UI Component ✅ **DONE**
+6. Chat Panel Component ✅ **DONE**
+7. useAICopilot Hook ✅ **DONE**
 
-### Week 2 - Advanced Features (6 stories) - **READY FOR IMPLEMENTATION**
-8. Conversation Summarization
-9. Message Pagination API
-10. Context Snapshot System
-11. Glossary Integration
-12. Session Lifecycle Management
-13. Context Fingerprint Caching
+### 🎯 PHASE 1 - Case Creation Flow (5 stories) - **HIGHEST PRIORITY**
+21. Case Creation Intent Detection 🔥 **IMPLEMENT FIRST**
+22. Case Creation Confirmation UI 🔥 **IMPLEMENT FIRST**
+23. Connect Copilot to Intake API 🔥 **IMPLEMENT FIRST**
+24. Redesign /intake Page as Quick Form 🔥 **IMPLEMENT FIRST**
+25. Intelligent Context Passing 🔥 **IMPLEMENT FIRST**
 
-### Week 3 - Security & Compliance (7 stories) - **READY FOR IMPLEMENTATION**
-14. Firestore Security Rules
-15. Content Moderation Enhancement
-16. Disclaimer System
-17. PII Redaction
-18. Demo Environment Configuration
-19. Performance Testing
-20. Accessibility & E2E Testing
+**Value:** Complete "conversation → case" journey. The "wow" demo moment.
 
-### Week 2-3 - Case Creation Integration (5 NEW stories) - **READY FOR IMPLEMENTATION** 🎉
-21. Case Creation Intent Detection ✅ **NEW**
-22. Case Creation Confirmation UI ✅ **NEW**
-23. Connect Copilot to Intake API ✅ **NEW**
-24. Redesign /intake Page as Quick Form ✅ **NEW**
-25. Intelligent Context Passing ✅ **NEW**
+### 🚀 PHASE 2 - Enhanced Experience (6 stories) - **HIGH VALUE**
+8. Conversation Summarization 💎 **HIGH VISIBILITY**
+9. Message Pagination API 💎 **HIGH VISIBILITY**
+10. Context Snapshot System 💎 **PERFORMANCE**
+11. Glossary Integration 💎 **HIGH VISIBILITY - Implement Early**
+12. Session Lifecycle Management 💎 **ENTERPRISE READY**
+13. Context Fingerprint Caching 💎 **PERFORMANCE**
+
+**Value:** Premium feel, educational features, performance demonstration.
+
+### 📊 PHASE 3 - Demo Polish (3 stories) - **QUALITY SIGNAL**
+18. Demo Environment Configuration ✨ **DEMO READY**
+19. Performance Testing ✨ **QUALITY SIGNAL**
+20. Accessibility & E2E Testing ✨ **QUALITY SIGNAL**
+
+**Value:** "This is production-quality, not a prototype."
+
+### 🚫 Epic 14: Security & Compliance (4 stories) - **DEFERRED**
+~~14. Firestore Security Rules~~ → **Epic 14.1** (Post-demo)
+~~15. Content Moderation Enhancement~~ → **Epic 14.2** (Post-demo)
+~~16. Disclaimer System~~ → **Epic 14.3** (Post-demo)
+~~17. PII Redaction~~ → **Epic 14.4** (Post-demo)
+
+**Rationale:** Critical for production, but don't demo well. Implement after securing investment/approval.
 
 ---
 
-## 🚀 Recommended Next Steps
+## 🚀 Strategic Priority: VALUE-FIRST APPROACH
 
-### **Option 1: Continue with Case Creation Implementation (RECOMMENDED)**
+**🎯 Product Strategy Decision (PM/PO):**
+Focus on **functionality and user value** for demo and investor presentations. Security/compliance features moved to separate Epic 14 for post-demo implementation.
 
-**Rationale:** Complete the case creation flow before moving to other features. This delivers immediate user value and completes a full user journey.
+---
+
+### **PHASE 1: Complete Case Creation Flow (HIGHEST PRIORITY)**
+
+**Stories 13.21-13.25 - THE "WOW" FACTOR**
+
+**Why This First:**
+- ✨ Demonstrates AI actually working (not just chatting)
+- 🎯 Complete user journey (conversation → case → value)
+- 💼 Impresses investors ("watch me create a case by talking")
+- 🔄 Shows sophisticated UX (seamless transitions)
+- 📱 Modern, polished experience
 
 **Implementation Order:**
-1. **Story 13.21** - Intent Detection (Foundation, ~4-6 hours)
+1. **Story 13.21** - Intent Detection (~4-6 hours)
 2. **Story 13.22** - Confirmation UI (~6-8 hours)
 3. **Story 13.23** - API Connection (~8-10 hours)
 4. **Story 13.24** - Redesign Page (~4-6 hours)
 5. **Story 13.25** - Context Passing (~6-8 hours)
 
-**Total Estimated Time:** 28-38 hours (~1 week for one developer, or ~3-4 days for pair)
+**Total Time:** ~1 week (one developer) or 3-4 days (pair programming)
 
-**Outcome:** Users can create cases entirely through conversational AI, with seamless form fallback.
-
----
-
-### **Option 2: Continue with Week 2 Advanced Features**
-
-**Start with Stories 13.8-13.13:**
-- Conversation Summarization
-- Message Pagination
-- Context Snapshots
-- Glossary Integration
-- Session Lifecycle
-- Fingerprint Caching
-
-**Rationale:** Build out infrastructure before case creation features.
-
-**Note:** These can be implemented in parallel with case creation if team capacity allows.
+**Demo Script:** "Let me show you how easy it is to create a case. I'll just talk to the AI about my eviction notice... *[conversation]* ...and boom, my case is created with a full journey."
 
 ---
 
-### **Option 3: Prioritize Week 3 Security & Compliance**
+### **PHASE 2: Enhanced Conversation Experience (HIGH VALUE)**
 
-**Start with Stories 13.14-13.20:**
-- Security rules
-- Content moderation
-- Disclaimers
-- PII protection
-- Testing
+**Stories 13.8-13.13 - THE "PREMIUM FEEL"**
 
-**Rationale:** Ensure compliance and security before full rollout.
+**Why This Next:**
+- 📝 Shows depth beyond MVP (summarization, history)
+- ⚡ Demonstrates performance (caching, snapshots)
+- 📚 Educational value (glossary integration)
+- 💾 Enterprise-ready (session management)
 
-**Note:** Some security stories (13.14-13.17) should be completed before production release.
+**Implementation Order:**
+1. **Story 13.11** - Glossary Integration (~6-8 hours) - HIGH VISIBILITY
+2. **Story 13.8** - Conversation Summarization (~8-10 hours)
+3. **Story 13.9** - Message Pagination (~4-6 hours)
+4. **Story 13.13** - Context Fingerprint Caching (~6-8 hours)
+5. **Story 13.10** - Context Snapshot System (~8-10 hours)
+6. **Story 13.12** - Session Lifecycle Management (~6-8 hours)
+
+**Total Time:** ~1 week
+
+**Demo Script:** "Notice how it explains legal terms inline... and see how fast this loads even with a long conversation history."
+
+---
+
+### **PHASE 3: Demo Polish & Quality (DEMO-READY)**
+
+**Stories 13.18-13.20 - THE "PRODUCTION QUALITY"**
+
+**Why This Last:**
+- 🎪 Perfects demo mode
+- 📊 Shows quality/professionalism
+- ♿ Demonstrates accessibility awareness
+
+**Implementation Order:**
+1. **Story 13.18** - Demo Environment Configuration (~4-6 hours)
+2. **Story 13.19** - Performance Testing (~6-8 hours)
+3. **Story 13.20** - Accessibility & E2E Testing (~8-10 hours)
+
+**Total Time:** 2-3 days
+
+**Demo Script:** "This isn't a prototype - we've tested performance, accessibility, everything."
+
+---
+
+### **🚫 DEFERRED: Security & Compliance (Epic 14)**
+
+**Stories 13.14-13.17 → MOVED TO EPIC 14**
+
+**Moved to separate Epic 14: "Security & Compliance"** (for post-demo/pre-production):
+- 14.1 (was 13.14): Firestore Security Rules
+- 14.2 (was 13.15): Content Moderation Enhancement
+- 14.3 (was 13.16): Disclaimer System
+- 14.4 (was 13.17): PII Redaction
+
+**Rationale:**
+- ❌ Don't demonstrate value to investors
+- ❌ Not visible in demo
+- ❌ "Table stakes" for production, not "wow factors"
+- ✅ Critical for production launch
+- ✅ Will implement before public release
+- ✅ Separate epic keeps focus on value
+
+**When to Implement:** After securing investment/approval, before production launch
 
 ---
 
@@ -415,11 +491,12 @@ As sm, plan sprint for case creation stories
 
 ---
 
-**Prepared by:** Sarah (Product Owner)  
+**Prepared by:** Sarah (Product Owner) & Mary (Product Manager)  
 **Date:** October 14, 2025  
-**Status:** ✅ STORY CREATION COMPLETE  
-**Next Phase:** Implementation (Stories 13.21-13.25 recommended)  
-**Next Agent:** Development Team (James) or Scrum Master (Bob)
+**Status:** ✅ STORY CREATION COMPLETE - VALUE-FIRST STRATEGY DEFINED  
+**Strategic Decision:** Focus on functionality/value for demo; defer security to Epic 14  
+**Next Phase:** PHASE 1 - Case Creation Flow (Stories 13.21-13.25)  
+**Next Agent:** Development Team (James) - "As dev, implement Story 13.21"
 
 ---
 

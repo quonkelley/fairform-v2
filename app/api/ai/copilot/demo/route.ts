@@ -1,5 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { listMessages } from "@/lib/db/aiSessionsRepo";
+import {
+  analyzeConversationState,
+  shouldRecheckReadiness,
+  formatReadinessLog,
+  type CaseCreationReadiness
+} from "@/lib/ai/intentDetection";
 
 /**
  * Demo chat endpoint that works without OpenAI API key
@@ -17,6 +23,7 @@ interface ConversationState {
     dateReceived?: string;
     [key: string]: string | undefined;
   };
+  readiness?: CaseCreationReadiness;
 }
 
 const demoConversationState = new Map<string, ConversationState>();
@@ -91,10 +98,26 @@ function generateDemoResponse(userMessage: string, sessionId: string, history: s
   
   // Add current message to context
   state.context.push(message);
-  
+
   // Extract and store key details from the message
   extractDetails(message, state);
-  
+
+  // Check if we should evaluate case creation readiness
+  if (shouldRecheckReadiness(state.readiness || null, state)) {
+    const readiness = analyzeConversationState(state);
+    const wasReady = state.readiness?.isReady || false;
+    const isNowReady = readiness.isReady;
+
+    state.readiness = readiness;
+
+    console.log('[Intent Detection] Readiness updated:', formatReadinessLog(readiness));
+
+    // Log transition to ready state
+    if (!wasReady && isNowReady) {
+      console.log('[Intent Detection] 🎉 Case creation is now ready! User can be offered case creation.');
+    }
+  }
+
   // Detect case type mentions
   const previousStage = state.stage;
   const previousCaseType = state.caseType;
