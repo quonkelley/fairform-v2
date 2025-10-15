@@ -2,7 +2,8 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Send, Bot, User, Clock, AlertCircle } from 'lucide-react';
+import { X, Send, Bot, User, Clock, AlertCircle, ArrowRight } from 'lucide-react';
+import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { CaseConfirmationCard } from './CaseConfirmationCard';
 
@@ -108,6 +109,63 @@ const typingVariants = {
       duration: 0.15,
     },
   },
+};
+
+// Helper function to render message content with case links
+const renderMessageContent = (content: string) => {
+  // Check for case link pattern: [View your case →](/cases/[caseId]) or **[View your case →](/cases/[caseId])**
+  const linkPattern = /\*?\*?\[([^\]]+)\]\((\/cases\/[^)]+)\)\*?\*?/g;
+  const matches = Array.from(content.matchAll(linkPattern));
+
+  if (matches.length === 0) {
+    // No links found, render as plain text with line breaks preserved
+    return <span className="whitespace-pre-wrap break-words">{content}</span>;
+  }
+
+  // Split content and render links as buttons
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+
+  matches.forEach((match, idx) => {
+    const [fullMatch, linkText, href] = match;
+    const matchIndex = match.index || 0;
+
+    // Add text before the link
+    if (matchIndex > lastIndex) {
+      const textBefore = content.substring(lastIndex, matchIndex);
+      parts.push(
+        <span key={`text-${idx}`} className="whitespace-pre-wrap break-words">
+          {textBefore}
+        </span>
+      );
+    }
+
+    // Add the link as a button
+    parts.push(
+      <Link
+        key={`link-${idx}`}
+        href={href}
+        className="inline-flex items-center gap-2 px-4 py-2 my-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm"
+      >
+        {linkText}
+        <ArrowRight className="w-4 h-4" />
+      </Link>
+    );
+
+    lastIndex = matchIndex + fullMatch.length;
+  });
+
+  // Add any remaining text after the last link
+  if (lastIndex < content.length) {
+    const textAfter = content.substring(lastIndex);
+    parts.push(
+      <span key="text-end" className="whitespace-pre-wrap break-words">
+        {textAfter}
+      </span>
+    );
+  }
+
+  return <div className="flex flex-col items-start gap-1">{parts}</div>;
 };
 
 // Typing indicator component
@@ -233,9 +291,9 @@ const MessageBubble: React.FC<{ message: Message }> = ({ message }) => {
               isFailed && 'bg-red-100 text-red-900 border border-red-200'
             )}
           >
-            <p className="text-sm whitespace-pre-wrap break-words">
-              {message.content}
-            </p>
+            <div className="text-sm">
+              {renderMessageContent(message.content)}
+            </div>
           </div>
 
           {/* Message metadata */}

@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { listMessages } from "@/lib/db/aiSessionsRepo";
 import {
   analyzeConversationState,
   shouldRecheckReadiness,
@@ -13,6 +12,10 @@ import {
   parseConfirmationResponse,
   generateUnclearResponse
 } from "@/lib/ai/responseParser";
+import {
+  generateCaseTitle,
+  generateSuccessMessage,
+} from "@/lib/ai/caseCreation";
 
 /**
  * Demo chat endpoint that works without OpenAI API key
@@ -34,6 +37,8 @@ interface ConversationState {
   confirmationShown?: boolean;
   confirmed?: boolean;
   lastConfirmationTime?: number;
+  caseId?: string;
+  caseCreationAttempted?: boolean;
 }
 
 const demoConversationState = new Map<string, ConversationState>();
@@ -50,22 +55,12 @@ export async function POST(request: NextRequest) {
 
     const effectiveSessionId = sessionId || "demo-session-" + Date.now();
     console.log('Using sessionId:', effectiveSessionId);
-    
-    // Get conversation history if session exists
-    let conversationHistory: string[] = [];
-    if (sessionId) {
-      try {
-        const messages = await listMessages(sessionId, { limit: 10 });
-        conversationHistory = messages.items.map(m => 
-          `${m.author}: ${m.content}`
-        );
-      } catch (error) {
-        console.log('Could not load history, using in-memory state only:', error);
-      }
-    }
+
+    // Note: Conversation history is tracked in-memory via demoConversationState
+    // Future enhancement: optionally load from aiSessionsRepo for persistent sessions
 
     // Generate a demo response based on the message and conversation state
-    const demoResponse = generateDemoResponse(message, effectiveSessionId, conversationHistory);
+    const demoResponse = generateDemoResponse(message, effectiveSessionId);
 
     // Check if response is a confirmation message object
     const responsePayload = typeof demoResponse === 'object'
@@ -168,6 +163,24 @@ function generateDemoResponse(
     console.log('State changed - Stage:', previousStage, '→', state.stage, 'CaseType:', previousCaseType, '→', state.caseType);
   }
 
+  // Handle case creation stage - create the case after confirmation
+  if (state.stage === 'case_creation' && !state.caseId && !state.caseCreationAttempted) {
+    // Mark as attempted to prevent duplicate calls
+    state.caseCreationAttempted = true;
+
+    // In demo mode, simulate successful case creation
+    const demoCaseId = 'demo-case-' + Date.now();
+    state.caseId = demoCaseId;
+    state.stage = 'case_created';
+
+    const caseTitle = generateCaseTitle(state.caseType, state.details);
+    const successMsg = generateSuccessMessage(demoCaseId, caseTitle, state.caseType || 'other');
+
+    console.log('[Case Creation] Demo case created:', demoCaseId, 'Title:', caseTitle);
+
+    return `${successMsg}\n\n_Note: This is demo mode - your case details are not actually saved._`;
+  }
+
   // Handle awaiting confirmation stage
   if (state.stage === 'awaiting_confirmation') {
     const response = parseConfirmationResponse(message);
@@ -176,13 +189,14 @@ function generateDemoResponse(
       case 'confirm':
         state.confirmed = true;
         state.stage = 'case_creation';
-        return "Perfect! I'm creating your case now. This will just take a moment...\n\n" +
-          "(Story 13.23 will handle the actual API call to create the case)";
+        console.log('[Confirmation] User confirmed case creation, transitioning to case_creation stage');
+        return "Perfect! I'm creating your case now. This will just take a moment...";
 
       case 'decline':
         state.stage = 'guidance';
         state.confirmationShown = false;
         state.lastConfirmationTime = Date.now();
+        console.log('[Confirmation] User declined case creation');
         return "No problem at all! Take your time. I'm here whenever you're ready. " +
           "Feel free to ask me any other questions about your situation, or let me know " +
           "when you'd like to create your case.";
@@ -190,7 +204,7 @@ function generateDemoResponse(
       case 'edit':
         // Update the detail
         state.details[response.field] = response.newValue;
-        console.log(`Updated ${response.field} to: ${response.newValue}`);
+        console.log(`[Confirmation] Updated ${response.field} to: ${response.newValue}`);
 
         // Re-check readiness
         const newReadiness = analyzeConversationState(state);
