@@ -7,12 +7,14 @@ import Link from "next/link";
 
 import { AIIntakeForm } from "@/components/intake/ai-intake-form";
 import { AISummaryCard } from "@/components/intake/ai-summary-card";
+import { InfoBanner } from "@/components/intake/InfoBanner";
 import { Button } from "@/components/ui/button";
 import { Alert } from "@/components/ui/alert";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/components/auth/auth-context";
 import type { IntakeClassification } from "@/lib/ai/schemas";
 import { useCreateCase } from "@/lib/hooks/useCreateCase";
+import { loadIntakeContext, clearIntakeContext, contextToFormDefaults, isFromCopilot } from "@/lib/ai/contextStorage";
 
 type IntakeStep = "input" | "review" | "confirm";
 
@@ -37,6 +39,11 @@ export default function IntakePage() {
     requiresReview: false,
   });
   const [showCopilotCTA, setShowCopilotCTA] = useState(true);
+  const [prefillData, setPrefillData] = useState<{
+    text?: string;
+    fromCopilot?: boolean;
+  } | null>(null);
+  const [showPrefillBanner, setShowPrefillBanner] = useState(false);
 
   const { mutate: createCase, isPending: isCreatingCase } = useCreateCase(user?.uid);
 
@@ -45,6 +52,26 @@ export default function IntakePage() {
     const dismissed = localStorage.getItem(COPILOT_CTA_DISMISSED_KEY);
     if (dismissed === 'true') {
       setShowCopilotCTA(false);
+    }
+  }, []);
+
+  // Load context from Copilot conversation on mount
+  useEffect(() => {
+    const context = loadIntakeContext();
+    if (context && isFromCopilot(context)) {
+      const formDefaults = contextToFormDefaults(context);
+      
+      // Build prefill text from context
+      const prefillText = formDefaults.notes || '';
+      
+      if (prefillText) {
+        setPrefillData({
+          text: prefillText,
+          fromCopilot: true,
+        });
+        setShowPrefillBanner(true);
+        console.log('Prefilling form from Copilot context:', formDefaults);
+      }
     }
   }, []);
 
@@ -87,6 +114,10 @@ export default function IntakePage() {
       },
       {
         onSuccess: (response) => {
+          // Clear context after successful case creation
+          clearIntakeContext();
+          console.log('Context cleared after case creation');
+          
           // Redirect to the newly created case
           router.push(`/cases/${response.id}`);
         },
@@ -244,10 +275,21 @@ export default function IntakePage() {
         </span>
       </Alert>
 
+      {/* Prefill Info Banner */}
+      {showPrefillBanner && prefillData?.fromCopilot && step === "input" && (
+        <InfoBanner
+          message="We've filled in details from your conversation with the AI Assistant. You can edit any information before submitting."
+          onDismiss={() => setShowPrefillBanner(false)}
+        />
+      )}
+
       {/* Step Content */}
       {step === "input" && (
         <div className="pt-4">
-          <AIIntakeForm onSuccess={handleIntakeSuccess} />
+          <AIIntakeForm 
+            onSuccess={handleIntakeSuccess}
+            initialText={prefillData?.text}
+          />
         </div>
       )}
 

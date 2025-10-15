@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/form";
 import { IntakeRequestSchema, type IntakeRequest, type IntakeClassification } from "@/lib/ai/schemas";
 import { useAIIntake, AIIntakeException } from "@/lib/hooks/useAIIntake";
+import { formDataToContext, updateIntakeContext } from "@/lib/ai/contextStorage";
 
 interface ModerationResult {
   verdict: "pass" | "review" | "block";
@@ -32,19 +33,47 @@ interface AIIntakeFormProps {
     moderation: ModerationResult;
     requiresReview: boolean;
   }) => void;
+  initialText?: string;
 }
 
-export function AIIntakeForm({ onSuccess }: AIIntakeFormProps) {
+export function AIIntakeForm({ onSuccess, initialText }: AIIntakeFormProps) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const { mutate, isPending } = useAIIntake();
 
   const form = useForm<IntakeRequest>({
     resolver: zodResolver(IntakeRequestSchema),
     defaultValues: {
-      text: "",
+      text: initialText || "",
       userTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     },
   });
+
+  // Debounced save to context - save form data as user types
+  const saveToContext = useCallback((text: string) => {
+    if (text.trim()) {
+      const context = formDataToContext({
+        notes: text,
+      });
+      updateIntakeContext(context);
+      console.log('Saved form data to context:', { notes: text });
+    }
+  }, []);
+
+  // Watch form text field and save to context with debounce
+  useEffect(() => {
+    const subscription = form.watch((value, { name }) => {
+      if (name === 'text' && value.text) {
+        // Debounce: save after 1 second of no typing
+        const timeoutId = setTimeout(() => {
+          saveToContext(value.text);
+        }, 1000);
+        
+        return () => clearTimeout(timeoutId);
+      }
+    });
+    
+    return () => subscription.unsubscribe();
+  }, [form, saveToContext]);
 
   const onSubmit = (data: IntakeRequest) => {
     setErrorMessage(null);

@@ -6,6 +6,7 @@ import { X, Send, Bot, User, Clock, AlertCircle, ArrowRight } from 'lucide-react
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { CaseConfirmationCard } from './CaseConfirmationCard';
+import { saveIntakeContext, type IntakeContext } from '@/lib/ai/contextStorage';
 
 export type Message = {
   id: string;
@@ -491,6 +492,12 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         console.log('Storing sessionId for future requests:', data.sessionId);
         setSessionId(data.sessionId);
       }
+
+      // Save intake context if provided (for context passing between Copilot and Form)
+      if (data.intakeContext) {
+        console.log('Saving intake context from Copilot conversation:', data.intakeContext);
+        saveIntakeContext(data.intakeContext as IntakeContext);
+      }
       
       // Mark user message as sent
       setMessages(prev => 
@@ -643,6 +650,12 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
     if (data.sessionId && !sessionId) {
       console.log('Storing sessionId for future requests:', data.sessionId);
       setSessionId(data.sessionId);
+    }
+
+    // Save intake context if provided (for context passing between Copilot and Form)
+    if (data.intakeContext) {
+      console.log('Saving intake context from Copilot conversation:', data.intakeContext);
+      saveIntakeContext(data.intakeContext as IntakeContext);
     }
 
     // Mark user message as sent

@@ -16,6 +16,9 @@ import {
   generateCaseTitle,
   generateSuccessMessage,
 } from "@/lib/ai/caseCreation";
+import {
+  conversationToContext,
+} from "@/lib/ai/contextStorage";
 
 /**
  * Demo chat endpoint that works without OpenAI API key
@@ -62,6 +65,17 @@ export async function POST(request: NextRequest) {
     // Generate a demo response based on the message and conversation state
     const demoResponse = generateDemoResponse(message, effectiveSessionId);
 
+    // Get conversation state to include in response for context passing
+    const state = demoConversationState.get(effectiveSessionId);
+    const intakeContext = state && (state.caseType || Object.keys(state.details).length > 0)
+      ? conversationToContext({
+          sessionId: effectiveSessionId,
+          caseType: state.caseType,
+          details: state.details,
+          context: state.context,
+        })
+      : undefined;
+
     // Check if response is a confirmation message object
     const responsePayload = typeof demoResponse === 'object'
       ? {
@@ -77,6 +91,7 @@ export async function POST(request: NextRequest) {
             blocked: false,
             ...demoResponse.meta,
           },
+          intakeContext, // Include context for client-side storage
         }
       : {
           sessionId: effectiveSessionId,
@@ -89,6 +104,7 @@ export async function POST(request: NextRequest) {
             model: "demo-mode",
             blocked: false,
           },
+          intakeContext, // Include context for client-side storage
         };
 
     return NextResponse.json(responsePayload);
