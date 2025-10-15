@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Send, Bot, User, Clock, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { CaseConfirmationCard } from './CaseConfirmationCard';
 
 export type Message = {
   id: string;
@@ -11,12 +12,16 @@ export type Message = {
   content: string;
   timestamp: number;
   status?: 'sending' | 'sent' | 'failed';
+  type?: 'normal' | 'confirmation';
   meta?: {
     tokensIn?: number;
     tokensOut?: number;
     latencyMs?: number;
     model?: string;
     blocked?: boolean;
+    caseType?: string;
+    details?: Record<string, string | undefined>;
+    readinessScore?: number;
   };
 };
 
@@ -142,7 +147,49 @@ const TypingIndicator: React.FC = () => {
 const MessageBubble: React.FC<{ message: Message }> = ({ message }) => {
   const isUser = message.author === 'user';
   const isFailed = message.status === 'failed';
-  
+  const isConfirmation = message.type === 'confirmation' && message.meta?.caseType && message.meta?.details;
+
+  // Render confirmation card for confirmation type messages
+  if (isConfirmation && message.meta && message.meta.caseType && message.meta.details) {
+    return (
+      <motion.div
+        variants={messageVariants}
+        initial="hidden"
+        animate="visible"
+        transition={{
+          duration: 0.2,
+          ease: "easeOut",
+        }}
+        className="flex justify-start mb-4"
+      >
+        <div className="flex items-start space-x-2 max-w-xs sm:max-w-md lg:max-w-lg w-full">
+          {/* Avatar */}
+          <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-gray-200 text-gray-600">
+            <Bot className="w-4 h-4" />
+          </div>
+
+          {/* Confirmation card */}
+          <div className="flex-1">
+            <CaseConfirmationCard
+              caseType={message.meta.caseType}
+              details={message.meta.details}
+            />
+            <div className="flex items-center space-x-1 mt-1 text-xs text-gray-500 px-2">
+              <Clock className="w-3 h-3" />
+              <span>
+                {new Date(message.timestamp).toLocaleTimeString([], {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}
+              </span>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+    );
+  }
+
+  // Regular message rendering
   return (
     <motion.div
       variants={messageVariants}
@@ -190,7 +237,7 @@ const MessageBubble: React.FC<{ message: Message }> = ({ message }) => {
               {message.content}
             </p>
           </div>
-          
+
           {/* Message metadata */}
           <div
             className={cn(
@@ -403,11 +450,13 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         content: data.reply || 'Sorry, I could not process your request.',
         timestamp: Date.now(),
         status: 'sent',
+        type: data.type || 'normal',
+        meta: data.meta,
       };
 
-      setMessages(prev => 
-        prev.map(msg => 
-          msg.id === userMessage.id 
+      setMessages(prev =>
+        prev.map(msg =>
+          msg.id === userMessage.id
             ? { ...msg, status: 'sent' as const }
             : msg
         ).concat(assistantMessage)
@@ -554,6 +603,8 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
       content: data.reply || data.message || data.content || 'I understand your question. Please consult with an attorney for legal advice.',
       timestamp: Date.now(),
       status: 'sent',
+      type: data.type || 'normal',
+      meta: data.meta,
     };
 
     setMessages(prev => [...prev, assistantMessage]);

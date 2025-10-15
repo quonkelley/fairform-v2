@@ -6,6 +6,13 @@ import {
   formatReadinessLog,
   type CaseCreationReadiness
 } from "@/lib/ai/intentDetection";
+import {
+  generateConfirmationMessage
+} from "@/lib/ai/confirmationMessages";
+import {
+  parseConfirmationResponse,
+  generateUnclearResponse
+} from "@/lib/ai/responseParser";
 
 /**
  * Demo chat endpoint that works without OpenAI API key
@@ -14,7 +21,7 @@ import {
 
 // In-memory conversation state for demo mode
 interface ConversationState {
-  stage: 'greeting' | 'intake' | 'details' | 'guidance';
+  stage: 'greeting' | 'intake' | 'details' | 'guidance' | 'awaiting_confirmation' | 'case_creation' | 'case_created';
   caseType?: string;
   context: string[];
   details: {
@@ -24,6 +31,9 @@ interface ConversationState {
     [key: string]: string | undefined;
   };
   readiness?: CaseCreationReadiness;
+  confirmationShown?: boolean;
+  confirmed?: boolean;
+  lastConfirmationTime?: number;
 }
 
 const demoConversationState = new Map<string, ConversationState>();
@@ -57,18 +67,36 @@ export async function POST(request: NextRequest) {
     // Generate a demo response based on the message and conversation state
     const demoResponse = generateDemoResponse(message, effectiveSessionId, conversationHistory);
 
-    return NextResponse.json({
-      sessionId: effectiveSessionId,
-      messageId: "demo-msg-" + Date.now(),
-      reply: demoResponse,
-      meta: {
-        tokensIn: 50,
-        tokensOut: 100,
-        latencyMs: 1000,
-        model: "demo-mode",
-        blocked: false,
-      },
-    });
+    // Check if response is a confirmation message object
+    const responsePayload = typeof demoResponse === 'object'
+      ? {
+          sessionId: effectiveSessionId,
+          messageId: "demo-msg-" + Date.now(),
+          reply: demoResponse.content,
+          type: demoResponse.type,
+          meta: {
+            tokensIn: 50,
+            tokensOut: 100,
+            latencyMs: 1000,
+            model: "demo-mode",
+            blocked: false,
+            ...demoResponse.meta,
+          },
+        }
+      : {
+          sessionId: effectiveSessionId,
+          messageId: "demo-msg-" + Date.now(),
+          reply: demoResponse,
+          meta: {
+            tokensIn: 50,
+            tokensOut: 100,
+            latencyMs: 1000,
+            model: "demo-mode",
+            blocked: false,
+          },
+        };
+
+    return NextResponse.json(responsePayload);
 
   } catch (error) {
     console.error("Demo chat error:", error);
@@ -79,7 +107,11 @@ export async function POST(request: NextRequest) {
   }
 }
 
-function generateDemoResponse(userMessage: string, sessionId: string, history: string[]): string {
+function generateDemoResponse(
+  userMessage: string,
+  sessionId: string,
+  // history: string[] // Reserved for future use - may enable history-based context
+): string | { content: string; type: string; meta: Record<string, unknown> } {
   const message = userMessage.toLowerCase();
   
   // Get or create conversation state
@@ -135,7 +167,68 @@ function generateDemoResponse(userMessage: string, sessionId: string, history: s
   if (previousStage !== state.stage || previousCaseType !== state.caseType) {
     console.log('State changed - Stage:', previousStage, '→', state.stage, 'CaseType:', previousCaseType, '→', state.caseType);
   }
-  
+
+  // Handle awaiting confirmation stage
+  if (state.stage === 'awaiting_confirmation') {
+    const response = parseConfirmationResponse(message);
+
+    switch (response.type) {
+      case 'confirm':
+        state.confirmed = true;
+        state.stage = 'case_creation';
+        return "Perfect! I'm creating your case now. This will just take a moment...\n\n" +
+          "(Story 13.23 will handle the actual API call to create the case)";
+
+      case 'decline':
+        state.stage = 'guidance';
+        state.confirmationShown = false;
+        state.lastConfirmationTime = Date.now();
+        return "No problem at all! Take your time. I'm here whenever you're ready. " +
+          "Feel free to ask me any other questions about your situation, or let me know " +
+          "when you'd like to create your case.";
+
+      case 'edit':
+        // Update the detail
+        state.details[response.field] = response.newValue;
+        console.log(`Updated ${response.field} to: ${response.newValue}`);
+
+        // Re-check readiness
+        const newReadiness = analyzeConversationState(state);
+        state.readiness = newReadiness;
+
+        // Show updated confirmation if still ready
+        if (newReadiness.isReady) {
+          const confirmMsg = generateConfirmationMessage(state);
+          return `Got it! I've updated your ${response.field}.\n\n${confirmMsg.content}`;
+        } else {
+          state.stage = 'details';
+          return `I've updated your ${response.field} to "${response.newValue}". ` +
+            `Let me know when you're ready to create your case.`;
+        }
+
+      case 'unclear':
+        return generateUnclearResponse();
+    }
+  }
+
+  // Check if we should show confirmation
+  if (
+    state.readiness?.isReady &&
+    !state.confirmationShown &&
+    !state.confirmed &&
+    state.stage !== 'awaiting_confirmation' &&
+    shouldShowConfirmation(state)
+  ) {
+    state.confirmationShown = true;
+    state.stage = 'awaiting_confirmation';
+
+    const confirmMsg = generateConfirmationMessage(state);
+    console.log('Showing confirmation message');
+
+    // Return the full confirmation message object so the API can format it correctly
+    return confirmMsg;
+  }
+
   // Response logic based on conversation stage
   const lowerMessage = userMessage.toLowerCase();
   console.log('Processing in stage:', state.stage);
@@ -259,7 +352,7 @@ function generateDemoResponse(userMessage: string, sessionId: string, history: s
  * Extract key details from user message and store in state
  */
 function extractDetails(message: string, state: ConversationState): void {
-  const lowerMessage = message.toLowerCase();
+  // const lowerMessage = message.toLowerCase(); // Uncomment if needed for future use
   
   // Extract location (city, state, county)
   const locationPatterns = [
@@ -321,4 +414,18 @@ function getIntakeResponse(caseType: string): string {
     return "I can help you understand the small claims process. Could you tell me more about your situation?\n\n• What is the dispute about?\n• Approximately how much is involved?\n• Have you tried to resolve this with the other party?\n\nI'll provide general guidance, but remember to consult with an attorney for specific legal advice.";
   }
   return "I can help with that! Could you tell me more about your legal situation?";
+}
+
+/**
+ * Determine if we should show confirmation based on cooldown
+ */
+function shouldShowConfirmation(state: ConversationState): boolean {
+  // If never shown, always show
+  if (!state.lastConfirmationTime) return true;
+
+  // Check cooldown (5 minutes)
+  const timeSinceLastConfirmation = Date.now() - state.lastConfirmationTime;
+  const cooldownMs = 5 * 60 * 1000; // 5 minutes
+
+  return timeSinceLastConfirmation > cooldownMs;
 }

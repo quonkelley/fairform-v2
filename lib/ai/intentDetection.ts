@@ -50,7 +50,7 @@ export interface CaseTypeRequirements {
  * Conversation state structure (matches demo endpoint)
  */
 export interface ConversationState {
-  stage: 'greeting' | 'intake' | 'details' | 'guidance';
+  stage: 'greeting' | 'intake' | 'details' | 'guidance' | 'awaiting_confirmation' | 'case_creation' | 'case_created';
   caseType?: string;
   context: string[];
   details: {
@@ -60,6 +60,9 @@ export interface ConversationState {
     [key: string]: string | undefined;
   };
   readiness?: CaseCreationReadiness;
+  confirmationShown?: boolean;
+  confirmed?: boolean;
+  lastConfirmationTime?: number;
 }
 
 /**
