@@ -114,6 +114,7 @@ Epic 13 transforms FairForm's AI Intake into a persistent, context-aware AI Copi
 ### Story 13.24: Redesign /intake Page as Quick Form Alternative
 **Status:** ✅ Complete (Commit: e50618a)
 **Completed:** 2025-10-15
+**Updated:** 2025-10-15 (UX Simplification)
 
 **What Was Built:**
 - Redesigned `/intake` page with Copilot CTA
@@ -121,37 +122,53 @@ Epic 13 transforms FairForm's AI Intake into a persistent, context-aware AI Copi
 - Dashboard auto-opens Copilot via `?openCopilot=true`
 - localStorage preference for dismissing CTA
 
-**Key Features:**
-- **Copilot CTA Card:**
-  - Prominent placement at top
-  - "Prefer to chat? Try AI Assistant →"
-  - Dismissible with X button
-  - Links to `/dashboard?openCopilot=true`
+**UX SIMPLIFICATION UPDATE (2025-10-15):**
+After initial implementation, we discovered the "Quick Form Intake" created a confusing 3-way choice:
+- AI Copilot (conversational)
+- Quick Form Intake (form-based AI intake)
+- Manual Case Creation (direct form)
 
-- **Method Comparison:**
-  - Collapsible comparison section
-  - Shows benefits of both methods
-  - Neutral, helpful tone
+**The Problem:**
+- Users wondered: "What's the difference between Copilot and Quick Form?"
+- Quick Form duplicated Copilot's AI intake functionality
+- Created cognitive friction and decision paralysis
+- "Zombie feature" that pointed users back to Copilot anyway
 
-- **Navigation:**
-  - "Quick Form" in main nav
-  - Active state styling
-  - Mobile optimized
+**The Solution - Simplified to 2 Clear Paths:**
+
+1. **Removed `/intake` page entirely:**
+   - Now redirects to `/dashboard?openCopilot=true`
+   - Preserves all existing links (no 404s)
+   - Shows "Redirecting to FairForm..." during transition
+
+2. **Updated Empty State:**
+   - **Primary CTA:** "Talk to FairForm" → Opens Copilot (AI-guided)
+   - **Secondary option:** "Already have all your case details?" → Manual creation (Expert path)
+   - Removed confusing "Quick Form" references
+
+3. **Updated Navigation:**
+   - Desktop: "Quick Form" → "Talk to FairForm" (links to dashboard + Copilot)
+   - Mobile: "Form" → "AI Assistant" (links to dashboard + Copilot)
 
 **Strategic UX Shift:**
-- Copilot is now visually primary intake method
-- Form remains fully functional as alternative
-- Respects user choice and preferences
+- **Before:** 3 confusing options (Copilot, Quick Form, Manual)
+- **After:** 2 clear paths (AI-guided OR Manual)
+- Copilot is the single AI-guided entry point
+- Manual creation preserved for power users who know exactly what they need
 
-**No Breaking Changes:**
-- All existing form functionality preserved
-- Same validation and submission
-- Backward compatible
+**Mental Model Clarity:**
+```
+User Decision:
+├─ "I need help" → Talk to FairForm (AI guides me)
+└─ "I know what I need" → Create manually (Direct entry)
+```
 
 **Impact:**
-- Positions AI Copilot as recommended method
-- Clear path for discovery and adoption
-- Maintains accessibility for form-preferring users
+- Eliminated cognitive friction and confusion
+- Faster user decision-making
+- Cleaner demo narrative (single hero action)
+- Preserved all functionality while simplifying UX
+- No broken links or 404s
 
 ---
 
@@ -279,15 +296,15 @@ Users can now:
 6. Confirm and create case
 7. Navigate to case detail via clickable link
 
-### Dual Intake Methods
-Users can choose:
-- **AI Copilot (Primary):** Conversational, guided, context-aware
-- **Quick Form (Alternative):** Fast, structured, familiar
+### Simplified Intake Paths
+Users can choose between two clear options:
+- **AI-Guided (Copilot):** Conversational, guided, context-aware - for users who need help
+- **Manual (Direct Form):** Fast, structured, expert path - for users who know exactly what they need
 
-Both methods:
+Both paths:
 - Fully functional
-- Properly positioned
-- Respect user preferences
+- Clearly differentiated (help vs. expert)
+- No cognitive friction or confusion
 
 ---
 
@@ -301,18 +318,21 @@ Both methods:
 - ✅ Confirmation UI with detail review
 - ✅ Demo case creation with success message
 - ✅ Clickable case links in chat
-- ✅ Quick Form alternative clearly positioned
-- ✅ Auto-open Copilot from intake CTA
+- ✅ Simplified intake UX (AI-guided vs Manual - no confusion)
+- ✅ Auto-open Copilot from navigation
+- ✅ Redirect legacy `/intake` URLs to dashboard with Copilot
 
 **Demo Script:**
 ```
-1. Open /dashboard
-2. Click AI Copilot widget (Cmd+K)
-3. Say: "I received a 30-day eviction notice in Indianapolis"
-4. AI collects details, shows confirmation
-5. Confirm → Case created with link
-6. Alternatively: Navigate to /intake
-7. See Copilot CTA, click "Try AI Assistant"
+1. Open /dashboard (empty state)
+2. Two clear options presented:
+   - "Talk to FairForm" (primary CTA)
+   - "Already have all your case details?" (manual option)
+3. Click "Talk to FairForm" → Copilot opens
+4. Say: "I received a 30-day eviction notice in Indianapolis"
+5. AI collects details, shows confirmation
+6. Confirm → Case created with link
+7. Alternative: Click "Talk to FairForm" in header nav
 8. Auto-opens Copilot, ready for conversation
 ```
 

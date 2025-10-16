@@ -4,6 +4,8 @@
 
 This directory contains all documentation for the FairForm project. Documents are organized by purpose and kept current as the project evolves.
 
+**Recent cleanup:** Archived outdated docs, consolidated roadmap documentation, and reorganized files for clarity (Oct 15, 2025).
+
 ---
 
 ## 🔥 **START HERE - CURRENT STATUS**
@@ -58,8 +60,9 @@ Visual interaction blueprint and emotional arc:
 ## 📋 Quick Navigation
 
 ### 🎯 Current Roadmap & Priorities
-- **[FAIRFORM-MASTER-ROADMAP.md](./FAIRFORM-MASTER-ROADMAP.md)** - Master roadmap and epic sequencing
-- **[STRATEGIC-ROADMAP-VALUE-FIRST.md](./STRATEGIC-ROADMAP-VALUE-FIRST.md)** - ⭐ **VALUE-FIRST strategic approach**
+- **[ROADMAP-INDEX.md](./ROADMAP-INDEX.md)** - Complete navigation guide to all roadmap docs ⭐ **START HERE**
+- **[STRATEGIC-ROADMAP-VALUE-FIRST.md](./STRATEGIC-ROADMAP-VALUE-FIRST.md)** - VALUE-FIRST strategic approach
+- **[FAIRFORM_VALUE_FIRST_DEMO_ROADMAP.md](./FAIRFORM_VALUE_FIRST_DEMO_ROADMAP.md)** - Epic sequencing and phases
 - **[DEMO_SETUP.md](./DEMO_SETUP.md)** - Demo environment configuration
 - **[DEPLOYMENT.md](./DEPLOYMENT.md)** - Deployment procedures
 
@@ -69,20 +72,23 @@ Visual interaction blueprint and emotional arc:
 - See HANDOFF-NEXT-SESSION.md for complete implementation plan
 
 ### 📚 Product Requirements
-- **[prd/](./prd/)** - Product requirement documents
+- **[prd/](./prd/)** - Product requirement documents (epics 1-18)
   - `epic-13-ai-copilot.md` - AI Copilot PRD ⭐ ACTIVE
   - `epic-14-security-compliance.md` - Security & Compliance PRD (Deferred to post-demo)
-  - `epic-18-smart-form-filler.md` - Smart Form Filler PRD ✨ NEW - Phase 6
-  - `epic-7-inline-glossary-system.md` - Glossary system PRD
-  - `epic-9-reminder-system.md` - Reminder system PRD
+  - `epic-15-case-import-and-auto-intake.md` - Case Import PRD ✨ NEW
+  - `epic-16-deadline-engine.md` - Deadline Engine PRD ✨ NEW
+  - `epic-17-hearing-day-mode.md` - Hearing Day Mode PRD ✨ NEW
+  - `epic-18-smart-form-filler.md` - Smart Form Filler PRD ✨ NEW
   - Additional epic PRDs (1-12)
 
 ### 🏗️ Architecture & Design
 - **[architecture/](./architecture/)** - Architecture documentation
+  - `overview.md`, `data-model.md`, `tech-stack.md`, `security.md`
+  - `The_New_Flow_Experience-Level-Shift.md` - UX evolution with Epic 18
 - **[architecture.md](./architecture.md)** - Architecture overview and index
 - **[design-system.md](./design-system.md)** - Design system and UI patterns
 - **[design-spec.md](./design-spec.md)** - Design specifications
-- **[case_details_api_specification.md](./case_details_api_specification.md)** - Case Details API spec
+- **[fairform_ux_journey_map.md](./fairform_ux_journey_map.md)** - User experience journey and emotional arc
 
 ### 📖 User Stories
 - **[stories/](./stories/)** - All user stories organized by epic
@@ -100,14 +106,12 @@ Visual interaction blueprint and emotional arc:
 - **[accessibility-audit.md](./accessibility-audit.md)** - Accessibility audit results
 - **[06_Compliance.md](./06_Compliance.md)** - Compliance documentation
 
-### 🔧 API Documentation
-- **[api/](./api/)** - API specifications and documentation
-
-### 📦 Templates & Reference
-- **[complete_case_journey_templates.md](./complete_case_journey_templates.md)** - Case journey templates for different case types
-
-### 📝 Meta Documentation
-- **[document_updates.md](./document_updates.md)** - Record of recent documentation changes
+### 🔧 API & Implementation
+- **[api/](./api/)** - API specifications
+  - `case_details_api_specification.md` - Case Details API spec
+- **[implementation/](./implementation/)** - Implementation guides and templates
+  - `complete_case_journey_templates.md` - Case journey templates by case type
+  - `demo-architecture-patches.md` - Demo-specific architecture notes
 
 ---
 
@@ -115,38 +119,41 @@ Visual interaction blueprint and emotional arc:
 
 Historical documents are organized in **[archive/](./archive/)** by category:
 
+- **[archive/roadmap-iterations/](./archive/roadmap-iterations/)** - Historical roadmap documents
+  - `FAIRFORM-MASTER-ROADMAP.md` - Outdated master roadmap (Jan 2025)
+  - `Form_filler_idea.md` - Original Epic 18 brainstorm
+  - `Recommended roadmap tweaks (surgical) (2).md` - Implementation guidance
+
+- **[archive/decisions/](./archive/decisions/)** - Strategic decision documents
+  - `remove_ai_intake.md` - AI intake removal decision (Oct 2025)
+
 - **[archive/epic-13-planning/](./archive/epic-13-planning/)** - Epic 13 planning history
   - Architecture review iterations and alignment documents
   - Story creation progress tracking
-  - Unified architecture specification (superseded by PRD)
   - Documentation index and story reviews
 
 - **[archive/session-handoffs/](./archive/session-handoffs/)** - Historical session handoffs
   - Previous sprint context and planning documents
-  - AI Copilot conversation fix documentation
   - Stakeholder updates and cleanup summaries
-  - Epic sequencing guides
 
 - **[archive/sprint-2/](./archive/sprint-2/)** - Sprint 2 historical documents
-  - Sprint 2 kickoff, planning, status, and retrospective
-  - Sprint 2 to 3 alignment document
-
 - **[archive/sprint-3-planning/](./archive/sprint-3-planning/)** - Sprint 3 initial planning docs
-  - Initial backlog and integration summaries
-  - Gap analysis and assessment documents
-
-- **[archive/team-communications/](./archive/team-communications/)** - Team updates and communications
-  - ChatGPT team updates and responses
-  - Team share packages
+- **[archive/team-communications/](./archive/team-communications/)** - Team updates
+- **[archive/wip-stories/](./archive/wip-stories/)** - Abandoned or incomplete stories
+- **[archive/architecture/](./archive/architecture/)** - Old architecture docs
+- **[archive/](./archive/)** - Other historical documents
+  - `prd.md` - Original MVP PRD (superseded by epic PRDs)
+  - `🎨 FairForm UX Journey Map — Visual & Interaction Blueprint (v2).md` - Duplicate UX doc
 
 ---
 
 ## 📐 Document Hierarchy
 
 ### Master Planning Documents
-1. **HANDOFF-NEXT-SESSION.md** - Current session context ⭐ START HERE
-2. **STRATEGIC-ROADMAP-VALUE-FIRST.md** - Strategic priorities
-3. **FAIRFORM-MASTER-ROADMAP.md** - Complete roadmap
+1. **ROADMAP-INDEX.md** - Navigation guide to all roadmap docs ⭐ START HERE
+2. **HANDOFF-NEXT-SESSION.md** - Current session context
+3. **STRATEGIC-ROADMAP-VALUE-FIRST.md** - Strategic priorities and decision rationale
+4. **FAIRFORM_VALUE_FIRST_DEMO_ROADMAP.md** - Epic sequencing and phases
 
 ### Epic 13 Documents (Ready for Implementation)
 1. **prd/epic-13-ai-copilot.md** - Product requirements ⭐
@@ -198,14 +205,15 @@ Historical documents are organized in **[archive/](./archive/)** by category:
 ### Find Documentation By Topic
 
 **AI Copilot Implementation:**
-- Start: `epic-13-unified-architecture-specification.md`
-- Stories: `stories/13.*.md`
+- Navigation: `ROADMAP-INDEX.md` ⭐
 - PRD: `prd/epic-13-ai-copilot.md`
+- Stories: `stories/13.*.md`
+- Current Status: `HANDOFF-NEXT-SESSION.md`
 
 **Current Sprint Status:**
-- Context: `CURRENT-SPRINT-CONTEXT.md`
-- Plan: `SPRINT-3-MASTER-PLAN.md`
-- Roadmap: `FAIRFORM-MASTER-ROADMAP.md`
+- Start: `ROADMAP-INDEX.md` or `HANDOFF-NEXT-SESSION.md`
+- Strategy: `STRATEGIC-ROADMAP-VALUE-FIRST.md`
+- Epic Sequencing: `FAIRFORM_VALUE_FIRST_DEMO_ROADMAP.md`
 
 **Architecture:**
 - Overview: `architecture.md`

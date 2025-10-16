@@ -1,108 +1,108 @@
-## **🕒 Epic 9 – Reminder System (Smart Notifications)**
+# Epic 9: Demo Smart Reminders Refresh
 
-**Phase:** 1.2 → Deferred to 1.3  
- **Owner:** Mary (BMAD AI)  
- **Status:** 🟡 Planned / Deferred  
- **Dependencies:** Epic 8 (Step Details), Epic 11 (Settings & Preferences)
+## 🧭 Overview
 
----
+- **Status:** Planned – Value-First Demo Phase 4 (“Remind”)
+- **Priority:** P1 (visible demo moment after Auto-Plan)
+- **Timebox:** 1 sprint (sequenced after Epic 7 + 13 integration pass)
+- **Dependencies:** Epic 6.5 (timeline steps), Epic 13 (Copilot case creation), Epic 7 (glossary hints), Demo Architecture v2
 
-### **🎯 Goal**
+## 🎯 Purpose
 
-Automatically notify users about key case deadlines, hearings, and filing tasks so they never miss critical actions.
+Transform the reminder experience into a polished, demo-ready flow that proves FairForm keeps users on track—without relying on production notification vendors. The goal is to simulate adaptive reminders inside the single-mode demo architecture, showcasing timing logic, glossary-backed messaging, and UI polish while keeping implementation entirely in-repo.
 
-### **💡 Problem Statement**
+### Success Definition
 
-Self-represented litigants routinely miss deadlines because they rely on paper notices and lack organized reminders. Missing a date can invalidate their entire case.
+- Presenter walks through the eviction demo, schedules reminders for the “File Answer” step, and sees instant feedback (toast + badge) plus a refreshed reminders panel.
+- Copilot follow-up highlights that the reminder is set, pulling glossary language from Epic 7.
+- Demo data survives navigation resets during the run (in-memory store + optional localStorage persistence).
 
----
+## 💡 Why It Matters (Roadmap Alignment)
 
-### **🧠 Solution Concept**
+| Roadmap Phase | Contribution |
+| ------------- | ------------ |
+| **Phase 3 – Deadline Engine** | Reminders feed from the auto-generated step timeline. |
+| **Phase 4 – Smart Reminders** | Demonstrates “Stay on track automatically” moment in investor demo. |
+| **Phase 6 – Smart Form Filler** | Adds follow-up reminder (“File Appearance Form”) as part of completion flow. |
 
-A background reminder system that sends SMS or email notifications for upcoming deadlines and court events. Users can opt in, configure delivery preferences, and pause reminders via Settings.
+## 🏗️ Architecture Guardrails
 
----
+- **Data Layer:** Use `demoRemindersRepo` (in-memory Map) defined in `lib/demo/demoRepos.ts`. No Twilio, Resend, or Firestore writes.
+- **Scheduling Model:** Leverage `demoConfig.timing` to simulate countdowns and “sent” state transitions (e.g., mark reminder as sent 5 seconds after creation).
+- **UI Surfaces:** 
+  - Reminder chip/button on each deadline card.
+  - Global toast (`components/ui/toast`) with glossary definition link.
+  - “Today” panel summarizing upcoming reminders (optional stage prop).
+- **State Reset:** `resetDemoStorage()` resets reminders between demos; optional `persistInLocalStorage` flag for QA builds.
+- **Accessibility:** Buttons are keyboard reachable; toast announces via aria-live; color contrast meets WCAG 2.1 AA.
 
-### **⚙️ Functional Requirements**
+## ⚖️ Scope & Boundaries
 
-| ID | Requirement | Acceptance Criteria |
-| ----- | ----- | ----- |
-| 9.1 | Reminder Creation | When case or step with due date is created, a reminder record is queued. |
-| 9.2 | Notification Delivery | Messages sent via Twilio (SMS) and Resend (Email). |
-| 9.3 | Opt-In Consent | User must explicitly enable SMS or email in Settings. |
-| 9.4 | Scheduling | Serverless cron or queue checks upcoming `sendAt` timestamps. |
-| 9.5 | UI Management | Settings screen lists active reminders and toggle controls. |
-| 9.6 | Error Handling | Retries on failure; logs status to Firestore. |
-| 9.7 | Compliance | Unsubscribe links for email; STOP for SMS. Privacy policy ack required. |
+### In Scope
+- Reminder creation from timeline cards and Copilot prompts.
+- Toast, badge, and “Synced” microcopy updates (per roadmap).
+- Demo scheduler that flips reminders from `pending` → `sent` with deterministic timing.
+- Integration with glossary hints (“Answer”, “Continuance”) to reinforce shared language.
+- Demo analytics hooks (console logs or PostHog events) to narrate the UX.
 
----
+### Out of Scope
+- Real SMS/email delivery, Twilio/Resend integrations, or consent management.
+- User-configurable schedules or timezone handling.
+- Production cron jobs or Firestore TTL cleanup.
 
-### **🔩 Technical Implementation**
+## 📦 Deliverables
 
-**Backend:** Firebase Functions / Vercel Cron Jobs  
- **Data Model:**
+1. **Reminder Creation API** – Client-side helper `createReminderForStep(stepId, offset)` hooking into `demoRemindersRepo`.
+2. **Reminder Controls** – UI updates to `DeadlineList` and `StepDetail` modal with “Remind Me” button + state badge (“Scheduled”, “Sent”).
+3. **Feedback Layer** – Toast + confetti (optional) confirming reminder creation and linking glossary definition.
+4. **Scheduler Loop** – `useDemoReminderScheduler` hook that monitors stored reminders and triggers “sent” animations.
+5. **Copilot Integration** – Demo script updates so Copilot suggests reminders after case creation and acknowledges completion.
+6. **QA Script & Tests** – Vitest unit tests for repo + scheduler, Playwright smoke test covering reminder flow.
 
-{  
-  "caseId": "case123",  
-  "stepId": "step4",  
-  "type": "due\_date",  
-  "sendAt": "2025-10-30T12:00:00Z",  
-  "method": "sms",  
-  "status": "pending"  
-}
+## 📚 Stories
 
-**APIs:**
+### Story 9.1 – Demo Reminder Foundations
+- Extend `demoRemindersRepo` with helper methods (`getUpcoming`, `markSent`).
+- Implement `useDemoReminderScheduler` hook that respects `demoConfig.timing.reminderCreatedDelay`.
+- Acceptance: Unit tests assert pending→sent transition; reset path verified.
 
-* `POST /api/reminders` – create reminder
+### Story 9.2 – Reminder UX Polish
+- Update deadline and step views with “Remind Me” CTA, scheduled badge, and glossary tooltip.
+- Implement toast via `useToast()` with copy: “Reminder set: File Answer by Thursday (Default Judgment definition).”
+- Acceptance: RTL tests for button state changes; jest-axe on updated components.
 
-* `PATCH /api/reminders/:id` – update status
+### Story 9.3 – Copilot & Narrative Integration
+- Script Copilot follow-up responses (`generateDemoResponse`) to reference reminder status.
+- Add optional `TodayCard` summary component showing next reminder with countdown.
+- Acceptance: Playwright demo script ensures toast appears, Copilot mentions scheduled reminder, and scheduler logs to console.
 
-* `GET /api/reminders?caseId=` – list reminders
+## 🔗 Inputs & References
 
-**Libraries:** Twilio, Resend, date-fns, Firebase Admin SDK
+- `docs/FAIRFORM_VALUE_FIRST_DEMO_ROADMAP.md` – Phase 4 scope (“W1 Reminder hook integration”, “W2 adaptive sync”, “W3 polish + logging”).
+- `docs/architecture/DEMO-ARCHITECTURE-ROBUST.md` – Demo repository pattern, reminder UX references, timing constants.
+- `lib/demo/scenarios/*` – Step metadata (deadlines + glossary keys) that feed reminders.
+- Epic 7 PRD – glossary alignment for reminder copy.
 
----
+## 📊 Metrics
 
-### **🧪 Testing Criteria**
+- Demo QA run: 100% of scripted reminder actions succeed without page refresh or manual fixes.
+- Toast seen & aria-announced within <500ms of button click.
+- Reminder badge flips to “Sent” within configured demo timing (default 5s).
+- Zero console errors during Phase 4 walkthrough.
 
-* Unit tests for scheduler logic.
+## ⚠️ Risks & Mitigations
 
-* Integration test with sandbox Twilio/Resend keys.
+| Risk | Mitigation |
+| ---- | ---------- |
+| Reminder state lost between views | Persist reminders in `demoConfig.behavior.persistInLocalStorage` when enabled; reset helper for presenters. |
+| Toast spam during rapid clicks | Debounce reminder creation per step; disable button once scheduled. |
+| Glossary definition missing | Fallback copy warns “Definition coming soon” and logs missing key for QA. |
+| Demo timing feels artificial | Tune `demoConfig.timing` constants; provide script notes for presenter to call out simulation. |
 
-* Load test (max 500 reminders/day).
+## ✅ Definition of Done
 
-* Compliance test: consent and unsubscribe flow.
-
----
-
-### **⚖️ Compliance / Ethics**
-
-* Requires explicit opt-in from user.
-
-* Stores minimal PII (contact info only).
-
-* Must support opt-out at any time.
-
-* Logs delivery events for audit.
-
----
-
-### **🚀 Deliverables**
-
-1. `reminders` collection and API routes
-
-2. Cloud Function scheduler (Cron or Pub/Sub)
-
-3. Settings UI for notification preferences
-
----
-
-### **✅ Definition of Done**
-
-* Reminder queue creates and sends on schedule.
-
-* Users can toggle reminders in Settings.
-
-* Logs reflect delivery success/failure.
-
-* Compliance and privacy review approved.
+- Reminder controls wired through demo repositories with deterministic behavior.
+- Copilot, dashboard, and optional “Today” card stay in sync after scheduling.
+- Accessibility and demo QA checklists pass (keyboard, screen reader, mobile tap).
+- README in `lib/demo/` updated with reminder architecture notes.
+- PM signs off after full Phase 2–4 rehearsal (Import → Auto-Plan → Remind).

@@ -125,10 +125,10 @@ export function StartCaseDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Start a new case</DialogTitle>
+          <DialogTitle>Create case manually</DialogTitle>
           <DialogDescription>
-            Give your case a nickname, choose the case type, and confirm the
-            jurisdiction so we can tailor your next steps.
+            If you&apos;ve already gathered your case details, you can create a case manually here. 
+            Otherwise, consider talking to FairForm for guided assistance with your legal situation.
           </DialogDescription>
         </DialogHeader>
 
@@ -238,17 +238,22 @@ export function StartCaseDialog({
               )}
             />
 
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => handleOpenChange(false)}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={createCase.isPending}>
-                {createCase.isPending ? "Saving…" : "Save case"}
-              </Button>
+            <DialogFooter className="flex-col sm:flex-row gap-2">
+              <div className="text-xs text-muted-foreground sm:mr-auto">
+                💡 Need help? Try talking to FairForm instead for guided assistance.
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => handleOpenChange(false)}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={createCase.isPending}>
+                  {createCase.isPending ? "Saving…" : "Save case"}
+                </Button>
+              </div>
             </DialogFooter>
           </form>
         </Form>

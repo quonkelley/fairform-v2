@@ -240,6 +240,31 @@ export async function updateContextSnapshot(
 }
 
 /**
+ * Update a session's conversation summary
+ *
+ * @param sessionId - Session ID to update
+ * @param summary - Conversation summary to store
+ * @throws AISessionsRepositoryError if update fails
+ */
+export async function updateSessionSummary(
+  sessionId: string,
+  summary: import("@/lib/ai/types").ConversationSummary
+): Promise<void> {
+  try {
+    const db = getDb();
+
+    await db.collection(SESSIONS_COLLECTION).doc(sessionId).update({
+      summary,
+      lastSummarizedAt: Date.now(),
+      updatedAt: Date.now(),
+    });
+  } catch (error) {
+    console.error("Failed to update session summary", { sessionId, error });
+    throw new AISessionsRepositoryError("Unable to update session summary", { cause: error });
+  }
+}
+
+/**
  * Get a single session by ID
  *
  * @param sessionId - Session ID to retrieve
@@ -395,6 +420,8 @@ function mapSessionDocument(snapshot: DocumentSnapshot<DocumentData>): AISession
     lastMessageAt: Number.isFinite(data.lastMessageAt) ? data.lastMessageAt : Date.now(),
     contextSnapshot: data.contextSnapshot || { hash: "", userPrefs: {} },
     demo: Boolean(data.demo),
+    summary: data.summary || undefined,
+    lastSummarizedAt: Number.isFinite(data.lastSummarizedAt) ? data.lastSummarizedAt : undefined,
   };
 }
 

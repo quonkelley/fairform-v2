@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { LogOut, Plus } from "lucide-react";
+import { useMemo, useState, useEffect } from "react";
+import { LogOut, Plus, Bot } from "lucide-react";
 
 import { CaseCard } from "@/components/dashboard/case-card";
 import { DashboardLayout } from "@/components/dashboard/dashboard-layout";
@@ -10,6 +10,7 @@ import { StartCaseDialog } from "@/components/dashboard/start-case-dialog";
 import { Spinner } from "@/components/feedback/spinner";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { useAICopilotContext } from "@/components/ai-copilot/AICopilotProvider";
 import { type CaseRecord } from "@/lib/db/types";
 import { useUserCases } from "@/lib/hooks/useUserCases";
 
@@ -55,11 +56,12 @@ export function DashboardContent({
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
             <Button
               type="button"
+              variant="outline"
               onClick={handleStartCaseClick}
               className="gap-2"
             >
               <Plus className="h-4 w-4" aria-hidden="true" />
-              Start new case
+              Create case manually
             </Button>
             <Button
               type="button"
@@ -91,6 +93,11 @@ export function DashboardContent({
               </button>
             </Alert>
           ) : null}
+
+          {/* Copilot CTA for users with existing cases */}
+          {cases.length > 0 && (
+            <CopilotCTABanner />
+          )}
 
           {casesQuery.isLoading ? (
             <LoadingState />
@@ -151,4 +158,51 @@ function LoadingState() {
 
 function sortByCreatedDate(a: CaseRecord, b: CaseRecord) {
   return b.createdAt.getTime() - a.createdAt.getTime();
+}
+
+function CopilotCTABanner() {
+  const [isDismissed, setIsDismissed] = useState(false);
+  const { openChat } = useAICopilotContext();
+
+  // Check localStorage for dismissal preference
+  useEffect(() => {
+    const dismissed = localStorage.getItem('copilot-cta-dismissed');
+    if (dismissed === 'true') {
+      setIsDismissed(true);
+    }
+  }, []);
+
+  const handleDismiss = () => {
+    setIsDismissed(true);
+    localStorage.setItem('copilot-cta-dismissed', 'true');
+  };
+
+  if (isDismissed) return null;
+
+  return (
+    <Alert className="border-primary/50 bg-primary/5">
+      <div className="flex items-start justify-between gap-4">
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <Bot className="h-4 w-4 text-primary" />
+            <span className="font-medium">Need help with a new situation?</span>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            FairForm can help you understand your options, explain legal terms, and guide you through your next steps.
+          </p>
+          <Button size="sm" onClick={openChat} className="gap-2">
+            <Bot className="h-4 w-4" />
+            Talk to FairForm
+          </Button>
+        </div>
+        <button
+          type="button"
+          onClick={handleDismiss}
+          className="text-sm text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        >
+          Dismiss
+        </button>
+      </div>
+    </Alert>
+  );
 }

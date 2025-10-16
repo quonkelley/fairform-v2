@@ -11,20 +11,43 @@
 ### 🎬 Emotional Arc
 😟 Confused → 🤝 Understood → 💡 Hopeful
 
+### 🧠 Entry Points (Simplified UX - Oct 2025)
+
+**Empty Dashboard State:**
+- **Primary CTA:** "Talk to FairForm" → Opens Copilot immediately
+- **Secondary Option:** "Already have all your case details?" → Manual case creation
+- **Clear Choice:** AI-guided help OR expert direct entry (no confusion)
+
+**Navigation:**
+- Desktop nav: "Talk to FairForm" → Opens dashboard with Copilot
+- Mobile nav: "AI Assistant" → Opens dashboard with Copilot
+- Legacy `/intake` URLs → Redirect to dashboard with Copilot auto-open
+
+**Design Decision (Oct 2025):**
+We simplified from 3 confusing options (Copilot, Quick Form, Manual) to 2 clear paths:
+1. **AI-Guided:** For users who need conversational help
+2. **Manual:** For power users who know exactly what they need
+
 ### 🧠 UX Moments
-1. User types or speaks: “I got an eviction notice.”
-2. AI recognizes intent → confirms understanding.
-3. Case creation card animates into view.
+1. User clicks "Talk to FairForm" → Copilot opens with welcoming message
+2. User describes situation: "I got an eviction notice in Indianapolis"
+3. AI collects information conversationally
+4. AI detects readiness (score ≥80) → Shows confirmation card
+5. User reviews details → Confirms case creation
+6. Case created → Clickable link to case detail page
 
 ### 🎨 Visual Layout
-- Left: Chat timeline
-- Right: Context card area (case preview)
+- Left: Chat timeline (conversational flow)
+- Right: Context card area (case confirmation, case preview)
 - Interaction cue: animated Copilot icon to show AI reasoning
+- Progress: Readiness score drives when to show confirmation
 
 ### ✏️ Components
 - `<ChatThread />`
-- `<CaseCreateCard />`
+- `<CaseConfirmationCard />` (shows collected details before creating)
+- `<CaseCreateCard />` (success message with link)
 - `<ActionChips />`
+- `<EmptyState />` (with clear AI-guided vs Manual choice)
 
 ---
 

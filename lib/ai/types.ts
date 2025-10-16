@@ -44,6 +44,25 @@ export interface UserPreferences {
 }
 
 /**
+ * Conversation summary for older messages
+ * Generated when conversation exceeds thresholds
+ */
+export interface ConversationSummary {
+  topics: string[];
+  decisions: Array<{
+    decision: string;
+    context: string;
+    timestamp: number;
+  }>;
+  userPreferences: Record<string, unknown>;
+  legalGuidance: string[];
+  summaryText: string;
+  keyOutcomes: string[];
+  messageCount: number;
+  createdAt: number;
+}
+
+/**
  * Context snapshot for efficient context building
  * Stored with each session to enable fast context reconstruction
  */
@@ -71,6 +90,8 @@ export interface AISession {
   lastMessageAt: number; // epoch milliseconds for lifecycle management
   contextSnapshot: ContextSnapshot;
   demo: boolean; // true for demo sandbox isolation
+  summary?: ConversationSummary; // Conversation summary for older messages
+  lastSummarizedAt?: number; // When last summarization occurred
 }
 
 /**
