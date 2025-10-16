@@ -1,8 +1,7 @@
 /**
- * Demo Mode Configuration Utilities
+ * Firebase Configuration Utilities
  *
- * Provides functions for detecting demo mode and returning appropriate
- * Firebase configuration based on the current environment.
+ * Provides functions for returning Firebase configuration.
  */
 
 export interface FirebaseConfig {
@@ -15,30 +14,9 @@ export interface FirebaseConfig {
 }
 
 /**
- * Detects if the application is running in demo mode
- * Demo mode is enabled when NEXT_PUBLIC_DEMO_MODE is set to 'true'
- */
-export function isDemoMode(): boolean {
-  return process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
-}
-
-/**
- * Returns the appropriate Firebase configuration based on the current mode
- * In demo mode, returns demo Firebase config
- * In production mode, returns production Firebase config
+ * Returns the Firebase configuration
  */
 export function getFirebaseConfig(): FirebaseConfig {
-  if (isDemoMode()) {
-    return {
-      projectId: process.env.NEXT_PUBLIC_FIREBASE_DEMO_PROJECT_ID,
-      apiKey: process.env.NEXT_PUBLIC_FIREBASE_DEMO_API_KEY,
-      authDomain: process.env.NEXT_PUBLIC_FIREBASE_DEMO_AUTH_DOMAIN,
-      storageBucket: process.env.NEXT_PUBLIC_FIREBASE_DEMO_STORAGE_BUCKET,
-      messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_DEMO_MESSAGING_SENDER_ID,
-      appId: process.env.NEXT_PUBLIC_FIREBASE_DEMO_APP_ID,
-    };
-  }
-
   return {
     projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
     apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -50,18 +28,10 @@ export function getFirebaseConfig(): FirebaseConfig {
 }
 
 /**
- * Returns the appropriate Firebase Admin configuration based on the current mode
+ * Returns the Firebase Admin configuration
  * Used for server-side Firebase Admin SDK initialization
  */
 export function getFirebaseAdminConfig() {
-  if (isDemoMode()) {
-    return {
-      projectId: process.env.FIREBASE_DEMO_PROJECT_ID,
-      clientEmail: process.env.FIREBASE_DEMO_CLIENT_EMAIL,
-      privateKey: process.env.FIREBASE_DEMO_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-    };
-  }
-
   return {
     projectId: process.env.FIREBASE_PROJECT_ID,
     clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
@@ -83,12 +53,11 @@ export function validateFirebaseConfig(config: FirebaseConfig): void {
     'appId',
   ];
 
-  const mode = isDemoMode() ? 'demo' : 'production';
   const missingFields = requiredFields.filter((field) => !config[field]);
 
   if (missingFields.length > 0) {
     throw new Error(
-      `Missing required Firebase ${mode} configuration: ${missingFields.join(', ')}. ` +
+      `Missing required Firebase configuration: ${missingFields.join(', ')}. ` +
       `Please check your environment variables.`
     );
   }
@@ -103,8 +72,6 @@ export function validateFirebaseAdminConfig(config: {
   clientEmail: string | undefined;
   privateKey: string | undefined;
 }): void {
-  const mode = isDemoMode() ? 'demo' : 'production';
-
   if (!config.projectId || !config.clientEmail || !config.privateKey) {
     const missing: string[] = [];
     if (!config.projectId) missing.push('projectId');
@@ -112,7 +79,7 @@ export function validateFirebaseAdminConfig(config: {
     if (!config.privateKey) missing.push('privateKey');
 
     throw new Error(
-      `Missing required Firebase Admin ${mode} configuration: ${missing.join(', ')}. ` +
+      `Missing required Firebase Admin configuration: ${missing.join(', ')}. ` +
       `Please check your environment variables.`
     );
   }

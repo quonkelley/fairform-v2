@@ -11,14 +11,20 @@ import {
   updateSessionCase,
   listMessages,
 } from "@/lib/db/aiSessionsRepo";
-import type { AISession } from "@/lib/ai/types";
+import type { AISession, ConversationStage, MinimumCaseInfo } from "@/lib/ai/types";
+import { 
+  extractCaseInfo, 
+  buildAppStateContext, 
+  getNextStage,
+  mapToConversationState
+} from "@/lib/ai/conversationStages";
+import { createCaseFromConversation } from "@/lib/ai/caseCreation";
 
 // Environment configuration
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const AI_MODEL = process.env.AI_MODEL ?? "gpt-4o-mini";
 const AI_TEMPERATURE = Number(process.env.AI_TEMPERATURE ?? "0.2");
 const AI_MAX_TOKENS = Number(process.env.AI_MAX_TOKENS ?? "1000");
-const DEMO_TOKEN = process.env.DEMO_TOKEN ?? "demo-secret-token";
 
 // Initialize OpenAI client
 const openai = new OpenAI({
@@ -41,13 +47,6 @@ class AIServiceError extends Error {
   }
 }
 
-/**
- * Check if request is a demo request with valid token
- */
-function isDemoRequest(request: NextRequest): boolean {
-  const authHeader = request.headers.get("authorization");
-  return authHeader === `Bearer ${DEMO_TOKEN}`;
-}
 
 /**
  * Generate a unique message ID
@@ -59,8 +58,21 @@ function generateMessageId(): string {
 /**
  * Build system prompt for AI Copilot
  */
-function buildSystemPrompt(): string {
-  return `You are FairForm's AI Copilot, an intelligent assistant helping self-represented litigants navigate their legal cases. 
+function buildSystemPrompt(appStateContext?: string): string {
+  const basePrompt = `You are FairForm's AI Copilot, an intelligent assistant helping self-represented litigants navigate their legal cases.
+
+Priority Data Collection (ask for or extract these first):
+1. CASE NUMBER - Most critical identifier. Always confirm if extracted from notice.
+2. CASE TYPE - eviction, small claims, family law, etc.
+3. COURT/JURISDICTION - county, state, or specific court
+4. HEARING DATE - if visible or mentioned
+
+Conversation Flow Rules:
+- When user uploads a notice image, echo back the parsed case number for confirmation
+- When minimum info is present (case type + jurisdiction + (case number OR hearing date)), explicitly propose: "I can create your case now. Continue?"
+- When [case_creation_success] appears in context, celebrate the success and provide the case link: "🎉 Great! Your case has been created. [View your case →](/cases/{case_id})"
+- When [case_creation_error] appears in context, acknowledge the issue and suggest alternatives or retry options
+- After case creation, suggest next step: "Generate your plan" or "Fill the Appearance form"
 
 Your role:
 - Provide helpful guidance and information about legal processes
@@ -76,6 +88,8 @@ Important guidelines:
 - If asked about specific case outcomes, explain that only an attorney can provide legal advice
 
 You are here to empower and educate, not to replace legal counsel.`;
+
+  return appStateContext ? `${basePrompt}\n\n${appStateContext}` : basePrompt;
 }
 
 type ChatCompletionStream = AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk>;
@@ -209,22 +223,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { message, sessionId, caseId, demo } = parsedRequest.data;
+    const { message, sessionId, caseId } = parsedRequest.data;
 
-    // Authentication (skip for demo mode)
+    // Authentication
     let user;
-    if (demo && isDemoRequest(request)) {
-      // Demo mode - use placeholder user
-      user = { uid: "demo-user", email: "demo@fairform.ai", emailVerified: true };
-    } else {
-      try {
-        user = await requireAuth(request);
-      } catch {
-        return NextResponse.json(
-          { error: "Unauthorized", message: "Authentication required" },
-          { status: 401 }
-        );
-      }
+    try {
+      user = await requireAuth(request);
+    } catch {
+      return NextResponse.json(
+        { error: "Unauthorized", message: "Authentication required" },
+        { status: 401 }
+      );
     }
 
     // Content moderation - check user input
@@ -248,8 +257,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Session management
+    // Session management with conversation stage tracking
     let session;
+    let conversationStage: ConversationStage = 'GREET';
+    let collectedInfo: Partial<MinimumCaseInfo> = {};
+
     if (sessionId) {
       session = await getSession(sessionId);
       if (!session) {
@@ -263,28 +275,59 @@ export async function POST(request: NextRequest) {
         await updateSessionCase(session.id, caseId);
         session = { ...session, caseId };
       }
+
+      // Extract conversation state from session metadata if available
+      if (session.contextSnapshot) {
+        // Try to reconstruct conversation state from context snapshot
+        conversationStage = 'GATHER_MIN'; // Default to gather_min for existing sessions
+        collectedInfo = {
+          caseType: session.contextSnapshot.caseType,
+          jurisdiction: session.contextSnapshot.jurisdiction,
+        };
+      }
     } else {
       // Create new session
       session = await createSession({
         userId: user.uid,
         caseId,
-        demo: demo || false,
+        demo: false,
         title: "New Conversation",
       });
+      conversationStage = 'GREET';
+    }
+
+    // Extract case info from current message
+    const extractedInfo = extractCaseInfo(message);
+    collectedInfo = { ...collectedInfo, ...extractedInfo };
+
+    // Determine next conversation stage
+    conversationStage = getNextStage(conversationStage, collectedInfo, message);
+
+    // Handle case creation if user confirmed
+    let caseCreationResult = null;
+    if (conversationStage === 'POST_CREATE_COACH') {
+      // Extract user context from message history
+      const messageHistory = await listMessages(session.id, { limit: 5 });
+      const userContext = messageHistory.items
+        .filter((msg) => msg.author === 'user')
+        .map((msg) => msg.content);
+      
+      // Create case from conversation state
+      const conversationState = mapToConversationState(collectedInfo, userContext);
+      
+      // Get auth token from request headers
+      const authHeader = request.headers.get("authorization");
+      const idToken = authHeader?.replace("Bearer ", "") || "";
+      
+      caseCreationResult = await createCaseFromConversation(
+        conversationState,
+        user.uid,
+        idToken
+      );
     }
 
     // Generate message IDs
     const assistantMessageId = generateMessageId();
-
-    // Store user message immediately
-    await appendMessage(session.id, {
-      author: "user",
-      content: message,
-      meta: {
-        model: AI_MODEL,
-        latencyMs: Date.now() - startTime,
-      },
-    });
 
     // Check if client supports SSE
     const acceptHeader = request.headers.get("accept") || "";
@@ -292,10 +335,10 @@ export async function POST(request: NextRequest) {
 
     if (supportsSSE) {
       // Stream response via SSE
-      return await handleSSEResponse(session, message, assistantMessageId, startTime);
+      return await handleSSEResponse(session, message, assistantMessageId, startTime, conversationStage, collectedInfo, caseCreationResult);
     } else {
       // Return JSON response
-      return await handleJSONResponse(session, message, assistantMessageId, startTime);
+      return await handleJSONResponse(session, message, assistantMessageId, startTime, conversationStage, collectedInfo, caseCreationResult);
     }
 
   } catch (error) {
@@ -326,7 +369,10 @@ async function handleSSEResponse(
   session: AISession,
   userMessage: string,
   messageId: string,
-  startTime: number
+  startTime: number,
+  conversationStage: ConversationStage,
+  collectedInfo: Partial<MinimumCaseInfo>,
+  caseCreationResult: { success: boolean; caseId?: string; error?: { code: string; message: string; retryable: boolean } } | null
 ): Promise<Response> {
   const encoder = new TextEncoder();
   
@@ -345,12 +391,24 @@ async function handleSSEResponse(
           encoder.encode(`event: meta\ndata: ${JSON.stringify(metaEvent)}\n\n`)
         );
 
+        // Build app state context for AI
+        let appStateContext = buildAppStateContext(conversationStage, collectedInfo);
+        
+        // Add case creation context if applicable
+        if (caseCreationResult) {
+          if (caseCreationResult.success && caseCreationResult.caseId) {
+            appStateContext += `\n[case_creation_success]\ncase_id=${caseCreationResult.caseId}\n`;
+          } else if (caseCreationResult.error) {
+            appStateContext += `\n[case_creation_error]\nerror_code=${caseCreationResult.error.code}\nerror_message=${caseCreationResult.error.message}\n`;
+          }
+        }
+        
         // Build messages array for OpenAI with conversation history
         const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
-          { role: "system", content: buildSystemPrompt() },
+          { role: "system", content: buildSystemPrompt(appStateContext) },
         ];
 
-        // Add conversation history (last 10 messages)
+        // Add conversation history (last 10 messages) - BEFORE storing the new user message
         try {
           const messageHistory = await listMessages(session.id, { limit: 10 });
           // Add messages in chronological order (oldest first)
@@ -368,6 +426,16 @@ async function handleSSEResponse(
 
         // Add current message
         messages.push({ role: "user", content: userMessage });
+
+        // Store user message AFTER building conversation history
+        await appendMessage(session.id, {
+          author: "user",
+          content: userMessage,
+          meta: {
+            model: AI_MODEL,
+            latencyMs: Date.now() - startTime,
+          },
+        });
 
         // Get OpenAI streaming response with retry coverage
         const completionResponse = await chatCompletionWithRetry(messages, { stream: true });
@@ -519,15 +587,30 @@ async function handleJSONResponse(
   session: AISession,
   userMessage: string,
   messageId: string,
-  startTime: number
+  startTime: number,
+  conversationStage: ConversationStage,
+  collectedInfo: Partial<MinimumCaseInfo>,
+  caseCreationResult: { success: boolean; caseId?: string; error?: { code: string; message: string; retryable: boolean } } | null
 ): Promise<NextResponse> {
   try {
+    // Build app state context for AI
+    let appStateContext = buildAppStateContext(conversationStage, collectedInfo);
+    
+    // Add case creation context if applicable
+    if (caseCreationResult) {
+      if (caseCreationResult.success && caseCreationResult.caseId) {
+        appStateContext += `\n[case_creation_success]\ncase_id=${caseCreationResult.caseId}\n`;
+      } else if (caseCreationResult.error) {
+        appStateContext += `\n[case_creation_error]\nerror_code=${caseCreationResult.error.code}\nerror_message=${caseCreationResult.error.message}\n`;
+      }
+    }
+    
     // Build messages array for OpenAI with conversation history
     const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
-      { role: "system", content: buildSystemPrompt() },
+      { role: "system", content: buildSystemPrompt(appStateContext) },
     ];
 
-    // Add conversation history (last 10 messages)
+    // Add conversation history (last 10 messages) - BEFORE storing the new user message
     try {
       const messageHistory = await listMessages(session.id, { limit: 10 });
       // Add messages in chronological order (oldest first)
@@ -545,6 +628,16 @@ async function handleJSONResponse(
 
     // Add current message
     messages.push({ role: "user", content: userMessage });
+
+    // Store user message AFTER building conversation history
+    await appendMessage(session.id, {
+      author: "user",
+      content: userMessage,
+      meta: {
+        model: AI_MODEL,
+        latencyMs: Date.now() - startTime,
+      },
+    });
 
     // Get OpenAI response (non-streaming)
     const completion = await chatCompletionWithRetry(messages) as ChatCompletionResult;

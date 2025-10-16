@@ -6,7 +6,9 @@ import { X, Send, Bot, User, Clock, AlertCircle, ArrowRight } from 'lucide-react
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { CaseConfirmationCard } from './CaseConfirmationCard';
-import { saveIntakeContext, type IntakeContext } from '@/lib/ai/contextStorage';
+import { SuggestionChips, type SuggestionChip } from './SuggestionChips';
+import { useAICopilot } from '@/lib/hooks/useAICopilot';
+import { useAuth } from '@/components/auth/auth-context';
 
 export type Message = {
   id: string;
@@ -34,7 +36,6 @@ export interface ChatPanelProps {
   onClose: () => void;
   sessionId?: string;
   caseId?: string;
-  connectionStatus: ConnectionStatus;
   className?: string;
 }
 
@@ -361,18 +362,58 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
   onClose,
   sessionId: initialSessionId,
   caseId,
-  connectionStatus,
   className,
 }) => {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const { user } = useAuth();
   const [inputValue, setInputValue] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [sessionId, setSessionId] = useState<string | undefined>(initialSessionId);
-  
+  const [showSuggestionChips, setShowSuggestionChips] = useState(false);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  // const eventSourceRef = useRef<EventSource | null>(null);
+
+  // Use the AI Copilot hook for proper authentication and message handling
+  // Don't auto-create session here - let the provider handle that
+  const {
+    sessionId,
+    messages: aiMessages,
+    sendMessage,
+    isSending,
+    connectionStatus: aiConnectionStatus,
+    error,
+    isLoading,
+  } = useAICopilot({
+    sessionId: initialSessionId,
+    caseId,
+    autoCreateSession: false, // Disable auto-creation to avoid duplicate sessions
+    enableStreaming: true,
+  });
+
+  // Debug logging for hook state
+  useEffect(() => {
+    console.log('🔍 useAICopilot hook state:', {
+      sessionId,
+      user: user?.uid,
+      isSending,
+      connectionStatus: aiConnectionStatus,
+      error: error?.message,
+      isLoading,
+      messagesCount: aiMessages.length
+    });
+  }, [sessionId, user, isSending, aiConnectionStatus, error, isLoading, aiMessages.length]);
+
+  // Convert AI messages to ChatPanel message format
+  const messages: Message[] = aiMessages
+    .filter(msg => msg.author === 'user' || msg.author === 'assistant') // Filter out system messages
+    .map(msg => ({
+      id: msg.id,
+      author: msg.author as 'user' | 'assistant',
+      content: msg.content,
+      timestamp: msg.createdAt,
+      status: msg.meta?.status === 'sending' ? 'sending' :
+              msg.meta?.status === 'failed' ? 'failed' : 'sent',
+      type: 'normal' as const,
+      meta: msg.meta,
+    }));
 
   // Auto-scroll to bottom when new messages arrive
   const scrollToBottom = useCallback(() => {
@@ -406,282 +447,78 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
+  // Add proactive greeting with suggestion chips
+  useEffect(() => {
+    if (isOpen && messages.length === 0 && !sessionStorage.getItem('ff_greeted')) {
+      setShowSuggestionChips(true);
+      sessionStorage.setItem('ff_greeted', '1');
+    }
+  }, [isOpen, messages.length]);
+
+  // Suggestion chips data
+  const suggestionChips: SuggestionChip[] = [
+    {
+      id: 'eviction',
+      text: 'I got an eviction notice',
+      onClick: () => {
+        setInputValue('I got an eviction notice');
+        setShowSuggestionChips(false);
+      }
+    },
+    {
+      id: 'hearing',
+      text: 'My hearing is next week',
+      onClick: () => {
+        setInputValue('My hearing is next week');
+        setShowSuggestionChips(false);
+      }
+    },
+    {
+      id: 'appearance',
+      text: 'I need to file an appearance',
+      onClick: () => {
+        setInputValue('I need to file an appearance');
+        setShowSuggestionChips(false);
+      }
+    }
+  ];
+
   // Handle sending messages
   const handleSendMessage = async () => {
-    if (!inputValue.trim() || isLoading) return;
-
-    const userMessage: Message = {
-      id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      author: 'user',
-      content: inputValue.trim(),
-      timestamp: Date.now(),
-      status: 'sending',
-    };
-
-    setMessages(prev => [...prev, userMessage]);
-    setInputValue('');
-    setIsLoading(true);
-    setIsTyping(true);
-
-    try {
-      // Check if browser supports SSE
-      const supportsSSE = typeof EventSource !== 'undefined';
-      
-      if (supportsSSE) {
-        await handleSSEResponse(userMessage);
-      } else {
-        await handleJSONResponse(userMessage);
-      }
-    } catch (error) {
-      console.error('Failed to send message:', error);
-      setMessages(prev => [
-        ...prev.slice(0, -1),
-        { ...prev[prev.length - 1], status: 'failed' },
-      ]);
-      setIsTyping(false);
-      setIsLoading(false);
-    }
-  };
-
-  const handleSSEResponse = async (userMessage: Message) => {
-    console.log('Sending message with sessionId:', sessionId);
-    
-    let response = await fetch('/api/ai/copilot/chat', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'text/event-stream',
-      },
-      body: JSON.stringify({
-        message: userMessage.content,
-        sessionId,
-        caseId,
-      }),
+    console.log('🔍 handleSendMessage called', {
+      inputValue: inputValue.trim(),
+      isSending,
+      user: user?.uid,
+      hasSendMessage: typeof sendMessage,
+      sessionId
     });
 
-    // Fallback to demo endpoint if main API fails
-    if (!response.ok) {
-      console.log('Main API failed, trying demo endpoint...');
-      response = await fetch('/api/ai/copilot/demo', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          message: userMessage.content,
-          sessionId,
-        }),
-      });
+    if (!inputValue.trim()) {
+      console.log('❌ No input value');
+      return;
     }
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+    if (isSending) {
+      console.log('❌ Already sending');
+      return;
     }
-
-    // Check if response is JSON (demo endpoint) or SSE (main API)
-    const contentType = response.headers.get('content-type') || '';
-    console.log('Response content type:', contentType);
-    
-    if (contentType.includes('application/json')) {
-      console.log('Handling JSON response from demo endpoint');
-      // Handle JSON response from demo endpoint
-      const data = await response.json();
-      
-      // Store sessionId for subsequent requests
-      if (data.sessionId && !sessionId) {
-        console.log('Storing sessionId for future requests:', data.sessionId);
-        setSessionId(data.sessionId);
-      }
-
-      // Save intake context if provided (for context passing between Copilot and Form)
-      if (data.intakeContext) {
-        console.log('Saving intake context from Copilot conversation:', data.intakeContext);
-        saveIntakeContext(data.intakeContext as IntakeContext);
-      }
-      
-      // Mark user message as sent
-      setMessages(prev => 
-        prev.map(msg => 
-          msg.id === userMessage.id 
-            ? { ...msg, status: 'sent' as const }
-            : msg
-        )
-      );
-
-      // Add assistant response
-      const assistantMessage: Message = {
-        id: data.messageId || `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        author: 'assistant',
-        content: data.reply || 'Sorry, I could not process your request.',
-        timestamp: Date.now(),
-        status: 'sent',
-        type: data.type || 'normal',
-        meta: data.meta,
-      };
-
-      setMessages(prev =>
-        prev.map(msg =>
-          msg.id === userMessage.id
-            ? { ...msg, status: 'sent' as const }
-            : msg
-        ).concat(assistantMessage)
-      );
-
-      setIsTyping(false);
-      setIsLoading(false);
+    if (!user) {
+      console.log('❌ No user');
       return;
     }
 
-    // Handle SSE response from main API
-    const reader = response.body?.getReader();
-    const decoder = new TextDecoder();
-
-    if (!reader) {
-      throw new Error('No response body');
-    }
-
-    // Mark user message as sent
-    setMessages(prev => 
-      prev.map(msg => 
-        msg.id === userMessage.id 
-          ? { ...msg, status: 'sent' as const }
-          : msg
-      )
-    );
-
-    // Create assistant message placeholder
-    const assistantMessageId = `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    const assistantMessage: Message = {
-      id: assistantMessageId,
-      author: 'assistant',
-      content: '',
-      timestamp: Date.now(),
-      status: 'sending',
-    };
-
-    setMessages(prev => [...prev, assistantMessage]);
+    const messageContent = inputValue.trim();
+    setInputValue('');
+    setShowSuggestionChips(false); // Hide chips on first user interaction
 
     try {
-      while (true) {
-        const { done, value } = await reader.read();
-        
-        if (done) break;
-
-        const chunk = decoder.decode(value);
-        const lines = chunk.split('\n');
-
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const data = line.slice(6);
-            
-            if (data === '[DONE]') {
-              setMessages(prev => 
-                prev.map(msg => 
-                  msg.id === assistantMessageId 
-                    ? { ...msg, status: 'sent' as const }
-                    : msg
-                )
-              );
-              setIsLoading(false);
-              setIsTyping(false);
-              return;
-            }
-
-            try {
-              const parsed = JSON.parse(data);
-              
-              if (parsed.type === 'content') {
-                setMessages(prev => 
-                  prev.map(msg => 
-                    msg.id === assistantMessageId 
-                      ? { ...msg, content: msg.content + parsed.content }
-                      : msg
-                  )
-                );
-              } else if (parsed.type === 'error') {
-                throw new Error(parsed.error);
-              }
-            } catch (parseError) {
-              console.warn('Failed to parse SSE data:', parseError);
-            }
-          }
-        }
-      }
-    } finally {
-      reader.releaseLock();
+      console.log('📤 Calling sendMessage with:', messageContent);
+      await sendMessage(messageContent);
+      console.log('✅ sendMessage completed');
+    } catch (error) {
+      console.error('❌ Failed to send message:', error);
     }
   };
 
-  const handleJSONResponse = async (userMessage: Message) => {
-    let response = await fetch('/api/ai/copilot/chat', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        message: userMessage.content,
-        sessionId,
-        caseId,
-      }),
-    });
-
-    // Fallback to demo endpoint if main API fails
-    if (!response.ok) {
-      console.log('Main API failed, trying demo endpoint...');
-      response = await fetch('/api/ai/copilot/demo', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          message: userMessage.content,
-          sessionId,
-        }),
-      });
-    }
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const data = await response.json();
-
-    // Store sessionId for subsequent requests
-    if (data.sessionId && !sessionId) {
-      console.log('Storing sessionId for future requests:', data.sessionId);
-      setSessionId(data.sessionId);
-    }
-
-    // Save intake context if provided (for context passing between Copilot and Form)
-    if (data.intakeContext) {
-      console.log('Saving intake context from Copilot conversation:', data.intakeContext);
-      saveIntakeContext(data.intakeContext as IntakeContext);
-    }
-
-    // Mark user message as sent
-    setMessages(prev => 
-      prev.map(msg => 
-        msg.id === userMessage.id 
-          ? { ...msg, status: 'sent' as const }
-          : msg
-      )
-    );
-
-    // Add assistant response
-    const assistantMessage: Message = {
-      id: data.messageId || `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      author: 'assistant',
-      content: data.reply || data.message || data.content || 'I understand your question. Please consult with an attorney for legal advice.',
-      timestamp: Date.now(),
-      status: 'sent',
-      type: data.type || 'normal',
-      meta: data.meta,
-    };
-
-    setMessages(prev => [...prev, assistantMessage]);
-    setIsLoading(false);
-    setIsTyping(false);
-  };
 
   // Handle Enter key (send) vs Shift+Enter (new line)
   const handleKeyDown = (event: React.KeyboardEvent) => {
@@ -726,7 +563,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                 <h2 className="text-lg font-semibold text-gray-900">
                   AI Copilot
                 </h2>
-                <ConnectionStatusIndicator status={connectionStatus} />
+                <ConnectionStatusIndicator status={aiConnectionStatus} />
               </div>
             </div>
             <button
@@ -741,24 +578,36 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
           {/* Messages area */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
             {messages.length === 0 ? (
-              <div className="flex items-center justify-center h-full text-center">
+              <div className="flex flex-col items-center justify-center h-full text-center">
                 <div>
                   <Bot className="w-12 h-12 text-gray-300 mx-auto mb-4" />
                   <h3 className="text-lg font-medium text-gray-900 mb-2">
                     Welcome to AI Copilot
                   </h3>
-                  <p className="text-gray-500">
-                    Ask me anything about your legal case or get help with the process.
+                  <p className="text-gray-500 mb-4">
+                    Hi! I&apos;m FairForm. Tell me what happened or upload a photo of your court notice. I&apos;ll create your case and show next steps in under 2 minutes.
                   </p>
+                  {showSuggestionChips && (
+                    <SuggestionChips 
+                      chips={suggestionChips}
+                    />
+                  )}
                 </div>
               </div>
             ) : (
-              messages.map((message) => (
-                <MessageBubble key={message.id} message={message} />
-              ))
+              <>
+                {messages.map((message) => (
+                  <MessageBubble key={message.id} message={message} />
+                ))}
+                {showSuggestionChips && (
+                  <SuggestionChips 
+                    chips={suggestionChips}
+                  />
+                )}
+              </>
             )}
             
-            {isTyping && <TypingIndicator />}
+            {isSending && <TypingIndicator />}
             <div ref={messagesEndRef} />
           </div>
 
@@ -774,7 +623,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                   placeholder="Type your message... (Enter to send, Shift+Enter for new line)"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   rows={1}
-                  disabled={isLoading}
+                  disabled={isSending}
                   style={{
                     minHeight: '40px',
                     maxHeight: '120px',
@@ -782,8 +631,11 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                 />
               </div>
               <button
-                onClick={handleSendMessage}
-                disabled={!inputValue.trim() || isLoading}
+                onClick={() => {
+                  console.log('🔘 Send button clicked');
+                  handleSendMessage();
+                }}
+                disabled={!inputValue.trim() || isSending}
                 className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 aria-label="Send message"
               >

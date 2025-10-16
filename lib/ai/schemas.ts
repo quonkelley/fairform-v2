@@ -42,7 +42,6 @@ export const ChatRequestSchema = z.object({
     .max(2000, "Message too long (max 2000 characters)"),
   sessionId: z.string().optional(),
   caseId: z.string().optional(),
-  demo: z.boolean().optional(),
 });
 
 export const ChatResponseSchema = z.object({

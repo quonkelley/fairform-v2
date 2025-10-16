@@ -1,17 +1,14 @@
 /**
- * useUserCases Hook - V2 with Repo Factory
- * 
- * Fetches user's cases using the repository factory pattern.
- * Automatically switches between demo and production repositories.
+ * useUserCases Hook - V2
+ *
+ * Fetches user's cases via API.
  */
 
 'use client';
 
 import { useQuery, type UseQueryResult } from "@tanstack/react-query";
 import { useAuth } from "@/components/auth/auth-context";
-import { isDemoMode } from "@/lib/db/repoFactory";
 import type { Case } from "@/lib/validation";
-import { useState } from "react";
 
 const emptyCases: Case[] = [];
 
@@ -19,24 +16,13 @@ export function useUserCases(
   userId: string | null | undefined,
 ): UseQueryResult<Case[], Error> {
   const { user } = useAuth();
-  const [demoMode] = useState(() => isDemoMode());
 
   return useQuery<Case[], Error>({
-    queryKey: ["cases", userId, demoMode ? "demo" : "prod"],
-    enabled: Boolean(userId) || demoMode,
+    queryKey: ["cases", userId],
+    enabled: Boolean(userId),
     placeholderData: emptyCases,
     queryFn: async () => {
-      console.log("🔍 useUserCases - mode:", demoMode ? "DEMO" : "PRODUCTION");
       console.log("🔍 useUserCases - userId:", userId);
-      
-      // Demo mode: Use demo repository
-      if (demoMode) {
-        console.log("✨ Using demo repository");
-        const { demoCasesRepo } = await import("@/lib/demo/demoRepos");
-        const cases = await demoCasesRepo.getUserCases('demo-user');
-        console.log("✅ Demo cases fetched:", cases.length);
-        return cases;
-      }
 
       // Production mode: Use API repository
       if (!userId || !user) {

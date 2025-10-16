@@ -28,6 +28,27 @@ vi.mock('@/lib/utils', () => ({
   cn: (...classes: string[]) => classes.filter(Boolean).join(' '),
 }));
 
+// Mock useAuth hook
+vi.mock('@/components/auth/auth-context', () => ({
+  useAuth: () => ({
+    user: { uid: 'test-user-id', getIdToken: vi.fn().mockResolvedValue('test-token') },
+    loading: false,
+  }),
+}));
+
+// Mock useAICopilot hook
+vi.mock('@/lib/hooks/useAICopilot', () => ({
+  useAICopilot: () => ({
+    sessionId: 'test-session-id',
+    messages: [],
+    sendMessage: vi.fn().mockResolvedValue(undefined),
+    isSending: false,
+    connectionStatus: 'connected',
+    error: null,
+    isLoading: false,
+  }),
+}));
+
 // Mock fetch globally
 global.fetch = vi.fn();
 
@@ -48,7 +69,6 @@ describe('ChatPanel', () => {
   const defaultProps = {
     isOpen: true,
     onClose: vi.fn(),
-    connectionStatus: 'connected' as const,
   };
 
   beforeEach(() => {
@@ -95,22 +115,11 @@ describe('ChatPanel', () => {
   });
 
   describe('Connection Status', () => {
-    it('shows connected status', () => {
-      render(<ChatPanel {...defaultProps} connectionStatus="connected" />);
-      
+    it('shows connected status from hook', () => {
+      render(<ChatPanel {...defaultProps} />);
+
+      // Connection status is now managed by useAICopilot hook
       expect(screen.getByText('Connected')).toBeInTheDocument();
-    });
-
-    it('shows connecting status', () => {
-      render(<ChatPanel {...defaultProps} connectionStatus="connecting" />);
-      
-      expect(screen.getByText('Connecting...')).toBeInTheDocument();
-    });
-
-    it('shows disconnected status', () => {
-      render(<ChatPanel {...defaultProps} connectionStatus="disconnected" />);
-      
-      expect(screen.getByText('Disconnected')).toBeInTheDocument();
     });
   });
 

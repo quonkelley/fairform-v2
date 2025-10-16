@@ -83,21 +83,6 @@ describe('useAICopilot', () => {
       expect(result.current.connectionStatus).toBe('disconnected');
       expect(result.current.isSending).toBe(false);
       expect(result.current.error).toBeNull();
-      expect(result.current.isDemoMode).toBe(false); // User is authenticated in tests
-    });
-
-    it('detects demo mode correctly', () => {
-      // Mock demo mode conditions
-      Object.defineProperty(process, 'env', {
-        value: { NODE_ENV: 'development' },
-        writable: true,
-      });
-
-      const { result } = renderHook(() => useAICopilot(), {
-        wrapper: createWrapper(),
-      });
-
-      expect(result.current.isDemoMode).toBe(true);
     });
   });
 

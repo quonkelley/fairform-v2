@@ -1,15 +1,12 @@
 /**
- * useCaseDetails Hook - V2 with Repo Factory
- * 
- * Fetches case details using the repository factory pattern.
- * Automatically switches between demo and production repositories.
+ * useCaseDetails Hook - V2
+ *
+ * Fetches case details via API.
  */
 
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/components/auth/auth-context";
-import { isDemoMode } from "@/lib/db/repoFactory";
 import type { Case } from "@/lib/validation";
-import { useState } from "react";
 
 /**
  * Hook to fetch case details
@@ -18,27 +15,11 @@ import { useState } from "react";
  */
 export function useCaseDetails(caseId: string) {
   const { user } = useAuth();
-  const [demoMode] = useState(() => isDemoMode());
 
   return useQuery<Case>({
-    queryKey: ["case", caseId, demoMode ? "demo" : "prod"],
+    queryKey: ["case", caseId],
     queryFn: async () => {
-      console.log("🔍 useCaseDetails - mode:", demoMode ? "DEMO" : "PRODUCTION");
       console.log("🔍 useCaseDetails - caseId:", caseId);
-
-      // Demo mode: Use demo repository
-      if (demoMode) {
-        console.log("✨ Using demo repository");
-        const { demoCasesRepo } = await import("@/lib/demo/demoRepos");
-        const caseData = await demoCasesRepo.getCase(caseId);
-        
-        if (!caseData) {
-          throw new Error(`Case not found: ${caseId}`);
-        }
-        
-        console.log("✅ Demo case fetched:", caseData.title);
-        return caseData;
-      }
 
       // Production mode: Use API
       if (!user) {
@@ -61,7 +42,7 @@ export function useCaseDetails(caseId: string) {
 
       return response.json();
     },
-    enabled: !!caseId && (demoMode || !!user), // Enable if demo mode OR user is present
+    enabled: !!caseId && !!user,
     staleTime: 1000 * 60 * 2, // 2 minutes
   });
 }

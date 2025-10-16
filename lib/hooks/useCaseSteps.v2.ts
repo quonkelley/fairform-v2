@@ -1,34 +1,20 @@
 /**
- * useCaseSteps Hook - V2 with Repo Factory
- * 
- * Fetches case steps using the repository factory pattern.
- * Automatically switches between demo and production repositories.
+ * useCaseSteps Hook - V2
+ *
+ * Fetches case steps via API.
  */
 
 import { useQuery, type UseQueryResult } from "@tanstack/react-query";
 import { useAuth } from "@/components/auth/auth-context";
-import { isDemoMode } from "@/lib/db/repoFactory";
 import type { CaseStep } from "@/lib/validation";
-import { useState } from "react";
 
 export function useCaseSteps(caseId: string): UseQueryResult<CaseStep[], Error> {
   const { user } = useAuth();
-  const [demoMode] = useState(() => isDemoMode());
 
   return useQuery({
-    queryKey: ["caseSteps", caseId, demoMode ? "demo" : "prod"],
+    queryKey: ["caseSteps", caseId],
     queryFn: async () => {
-      console.log("🔍 useCaseSteps - mode:", demoMode ? "DEMO" : "PRODUCTION");
       console.log("🔍 useCaseSteps - caseId:", caseId);
-
-      // Demo mode: Use demo repository
-      if (demoMode) {
-        console.log("✨ Using demo repository");
-        const { demoStepsRepo } = await import("@/lib/demo/demoRepos");
-        const steps = await demoStepsRepo.getCaseSteps(caseId);
-        console.log("✅ Demo steps fetched:", steps.length);
-        return steps;
-      }
 
       // Production mode: Use API
       if (!user) {
@@ -59,7 +45,7 @@ export function useCaseSteps(caseId: string): UseQueryResult<CaseStep[], Error> 
       }));
     },
     staleTime: 1000 * 60 * 5, // 5 minutes
-    enabled: !!caseId && (demoMode || !!user), // Enable if demo mode OR user is present
+    enabled: !!caseId && !!user,
   });
 }
 

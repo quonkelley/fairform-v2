@@ -13,6 +13,21 @@
 export type Author = 'user' | 'assistant' | 'system';
 
 /**
+ * Conversation stages for lightweight state tracking
+ */
+export type ConversationStage = 'GREET' | 'GATHER_MIN' | 'CONFIRM_CREATE' | 'POST_CREATE_COACH';
+
+/**
+ * Minimum case information required for case creation
+ */
+export interface MinimumCaseInfo {
+  caseType?: string;
+  jurisdiction?: string;
+  caseNumber?: string;
+  hearingDate?: string;
+}
+
+/**
  * Session status lifecycle
  */
 export type SessionStatus = 'active' | 'archived' | 'ended';

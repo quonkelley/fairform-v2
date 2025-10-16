@@ -90,7 +90,6 @@ export function AICopilotProvider({ children, caseId }: AICopilotProviderProps) 
         onClose={closeChat}
         sessionId={sessionId || undefined}
         caseId={caseId}
-        connectionStatus={connectionStatus}
       />
     </AICopilotContext.Provider>
   );

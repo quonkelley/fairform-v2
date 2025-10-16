@@ -75,10 +75,7 @@ export interface UseAICopilotReturn {
   // Error handling
   error: Error | null;
   clearError: () => void;
-  
-  // Demo mode
-  isDemoMode: boolean;
-  
+
   // Loading states
   isLoading: boolean;
   isCreatingSession: boolean;
@@ -123,13 +120,6 @@ export function useAICopilot(options: UseAICopilotOptions = {}): UseAICopilotRet
   const [unreadCount, setUnreadCount] = useState(0);
   const [context, setContext] = useState<AIPromptContext | null>(null);
 
-  // Demo mode detection
-  const isDemoMode = useMemo(() => {
-    return process.env.NODE_ENV === 'development' || 
-           (typeof window !== 'undefined' && window.location.hostname.includes('demo')) ||
-           !user;
-  }, [user]);
-
   // Session query
   const sessionQuery = useQuery({
     queryKey: queryKeys.session(currentSessionId || 'current'),
@@ -149,7 +139,7 @@ export function useAICopilot(options: UseAICopilotOptions = {}): UseAICopilotRet
 
       return await response.json();
     },
-    enabled: !!currentSessionId && !!user && !isDemoMode,
+    enabled: !!currentSessionId && !!user,
     staleTime: 5 * 60 * 1000, // 5 minutes
     retry: 3,
   });
@@ -190,7 +180,7 @@ export function useAICopilot(options: UseAICopilotOptions = {}): UseAICopilotRet
       return lastPage.hasMore ? lastPage.items[lastPage.items.length - 1]?.createdAt : undefined;
     },
     initialPageParam: undefined,
-    enabled: !!currentSessionId && !!user && !isDemoMode,
+    enabled: !!currentSessionId && !!user,
     staleTime: 30 * 1000, // 30 seconds
     retry: 2,
   });
@@ -235,10 +225,19 @@ export function useAICopilot(options: UseAICopilotOptions = {}): UseAICopilotRet
 
   // Auto-create session if needed
   useEffect(() => {
-    if (autoCreateSession && !currentSessionId && !isDemoMode && user && !createSessionMutation.isPending) {
+    console.log('🔍 Auto-create session check:', {
+      autoCreateSession,
+      currentSessionId,
+      user: user?.uid,
+      isPending: createSessionMutation.isPending
+    });
+
+    if (autoCreateSession && !currentSessionId && user && !createSessionMutation.isPending) {
+      console.log('📤 Creating session...');
       createSessionMutation.mutate({ caseId });
     }
-  }, [autoCreateSession, currentSessionId, isDemoMode, user, caseId, createSessionMutation]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoCreateSession, currentSessionId, user, caseId]);
 
   // Flatten messages from infinite query
   const messages = useMemo(() => {
@@ -248,14 +247,12 @@ export function useAICopilot(options: UseAICopilotOptions = {}): UseAICopilotRet
 
   // Connection status management
   useEffect(() => {
-    if (currentSessionId && user && !isDemoMode) {
-      setConnectionStatus('connected');
-    } else if (isDemoMode) {
+    if (currentSessionId && user) {
       setConnectionStatus('connected');
     } else {
       setConnectionStatus('disconnected');
     }
-  }, [currentSessionId, user, isDemoMode]);
+  }, [currentSessionId, user]);
 
   // SSE response handler
   const handleSSEResponse = useCallback(async (content: string, sessionId: string, idToken: string) => {
@@ -417,14 +414,34 @@ export function useAICopilot(options: UseAICopilotOptions = {}): UseAICopilotRet
 
   // Message sending with SSE streaming
   const sendMessage = useCallback(async (content: string) => {
-    if (!currentSessionId || !user || isSending) return;
+    console.log('🔍 useAICopilot sendMessage called:', {
+      content,
+      currentSessionId,
+      user: user?.uid,
+      isSending
+    });
+
+    if (!user) {
+      console.log('❌ No user');
+      return;
+    }
+    if (isSending) {
+      console.log('❌ Already sending');
+      return;
+    }
+
+    // Ensure we have a session ID
+    if (!currentSessionId) {
+      console.log('❌ No currentSessionId');
+      return;
+    }
 
     setIsSending(true);
     setError(null);
 
     try {
       const idToken = await user.getIdToken();
-      
+
       // Optimistic update - add user message immediately
       const userMessage: AIMessage = {
         id: `temp_${Date.now()}`,
@@ -467,7 +484,7 @@ export function useAICopilot(options: UseAICopilotOptions = {}): UseAICopilotRet
           const newPages = old.pages.map((page: PaginatedMessages) => ({
             ...page,
             items: page.items.map((msg: AIMessage) =>
-              msg.id === userMessage.id
+              msg.id === `temp_${Date.now()}`
                 ? { ...msg, meta: { ...msg.meta, status: 'sent' } }
                 : msg
             )
@@ -479,7 +496,7 @@ export function useAICopilot(options: UseAICopilotOptions = {}): UseAICopilotRet
     } catch (err) {
       console.error('Send message error:', err);
       setError(err as Error);
-      
+
       // Mark message as failed
       queryClient.setQueryData(
         queryKeys.messages(currentSessionId),
@@ -573,10 +590,7 @@ export function useAICopilot(options: UseAICopilotOptions = {}): UseAICopilotRet
     // Error handling
     error,
     clearError,
-    
-    // Demo mode
-    isDemoMode,
-    
+
     // Loading states
     isLoading: sessionQuery.isLoading || messagesQuery.isLoading,
     isCreatingSession: createSessionMutation.isPending,

@@ -1,14 +1,13 @@
 import { NextResponse } from "next/server";
 
 import { HealthResponseSchema, type HealthResponse } from "@/lib/validation";
-import { isDemoMode } from "@/lib/config/demo";
 
 // GET /api/health - Health check endpoint
 export async function GET() {
   try {
     const payload: HealthResponse = {
       ok: true,
-      demo: isDemoMode(),
+      demo: false,
       timestamp: new Date().toISOString(),
     };
     const response = HealthResponseSchema.parse(payload);
