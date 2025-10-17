@@ -493,14 +493,9 @@ export async function POST(request: NextRequest) {
       // Create case from conversation state
       const conversationState = mapToConversationState(collectedInfo, userContext);
       
-      // Get auth token from request headers
-      const authHeader = request.headers.get("authorization");
-      const idToken = authHeader?.replace("Bearer ", "") || "";
-      
       caseCreationResult = await createCaseFromConversation(
         conversationState,
-        user.uid,
-        idToken
+        user.uid
       );
       
       // Re-evaluate conversation stage after case creation attempt

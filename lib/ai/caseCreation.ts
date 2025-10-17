@@ -253,8 +253,7 @@ export function generateConversationSummary(state: ConversationStateForCase): st
  */
 export async function createCaseFromConversation(
   state: ConversationStateForCase,
-  userId: string,
-  idToken: string
+  userId: string
 ): Promise<CaseCreationResult> {
   try {
     // Map conversation to case input
