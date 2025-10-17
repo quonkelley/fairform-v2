@@ -169,17 +169,30 @@ const renderMessageContent = (content: string) => {
       );
     }
 
-    // Add the link as a button
-    parts.push(
-      <Link
-        key={`link-${idx}`}
-        href={href}
-        className="inline-flex items-center gap-2 px-4 py-2 my-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm"
-      >
-        {linkText}
-        <ArrowRight className="w-4 h-4" />
-      </Link>
-    );
+    // Add the link as a button - but only if it's a valid case ID (not a placeholder)
+    if (href.includes('{case_id}') || href.includes('%7Bcase_id%7D')) {
+      // If the AI generated a placeholder, show a message instead of a broken link
+      parts.push(
+        <div
+          key={`placeholder-${idx}`}
+          className="inline-flex items-center gap-2 px-4 py-2 my-2 bg-gray-400 text-white rounded-lg font-medium text-sm cursor-not-allowed"
+        >
+          {linkText}
+          <span className="text-xs">(Case link will be available after case creation)</span>
+        </div>
+      );
+    } else {
+      parts.push(
+        <Link
+          key={`link-${idx}`}
+          href={href}
+          className="inline-flex items-center gap-2 px-4 py-2 my-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm"
+        >
+          {linkText}
+          <ArrowRight className="w-4 h-4" />
+        </Link>
+      );
+    }
 
     lastIndex = matchIndex + fullMatch.length;
   });

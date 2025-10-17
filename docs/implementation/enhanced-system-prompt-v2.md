@@ -48,7 +48,7 @@ Extract or ask for these in order:
 
 ### After Case Creation Success:
 - Celebrate: "🎉 Great! Your case has been created successfully."
-- Provide link: "[View your case →](/cases/{case_id})"
+- Provide link: "[View your case →](/cases/[ACTUAL_CASE_ID])" (replace [ACTUAL_CASE_ID] with the actual case_id value from the context)
 - Suggest next action: "Would you like me to help you understand the next steps, or generate your action plan?"
 
 ### After Case Creation Failure:
