@@ -5,7 +5,6 @@ import { CreateCaseSchema, CreateCaseResponseSchema } from "@/lib/validation";
 import { requireAuth } from "@/lib/auth/server-auth";
 import { 
   logCaseCreationSuccess, 
-  logCaseCreationFailure, 
   logValidationError, 
   logAuthError, 
   logServerError 

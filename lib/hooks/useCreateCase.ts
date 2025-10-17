@@ -52,15 +52,19 @@ export function useCreateCase(
         
         // If there are validation details, include them in the error message
         if (errorData.details && Array.isArray(errorData.details)) {
-          const validationErrors = errorData.details.map((detail: any) => detail.message).join(', ');
+          const validationErrors = errorData.details.map((detail: { message: string }) => detail.message).join(', ');
           errorMessage = `${errorMessage}. ${validationErrors}`;
         }
         
         // Create a custom error with additional context
-        const error = new Error(errorMessage);
-        (error as any).status = response.status;
-        (error as any).details = errorData.details;
-        (error as any).requestId = errorData.requestId;
+        const error = new Error(errorMessage) as Error & {
+          status: number;
+          details: unknown;
+          requestId: string;
+        };
+        error.status = response.status;
+        error.details = errorData.details;
+        error.requestId = errorData.requestId;
         
         throw error;
       }

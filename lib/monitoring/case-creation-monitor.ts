@@ -27,7 +27,7 @@ export interface CaseCreationEvent {
   requestId: string;
   userId: string;
   error?: string;
-  validationDetails?: any[];
+  validationDetails?: Array<{ field: string; message: string; code: string }>;
   responseTime?: number;
   userAgent?: string;
   ipAddress?: string;
@@ -238,7 +238,7 @@ export function logValidationError(
   requestId: string,
   userId: string,
   error: string,
-  validationDetails: any[],
+  validationDetails: Array<{ field: string; message: string; code: string }>,
   userAgent?: string,
   ipAddress?: string
 ) {

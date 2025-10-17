@@ -10,14 +10,20 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Copy, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
 
+interface ValidationDetail {
+  field: string;
+  message: string;
+  code: string;
+}
+
 interface DebugResult {
   success: boolean;
   requestId?: string;
   error?: string;
-  details?: any[];
+  details?: ValidationDetail[];
   timestamp: string;
-  requestData: any;
-  responseData?: any;
+  requestData: Record<string, unknown>;
+  responseData?: Record<string, unknown>;
 }
 
 export function CaseCreationDebug() {
@@ -212,7 +218,7 @@ export function CaseCreationDebug() {
               <div>
                 <h4 className="font-medium mb-2">Validation Details:</h4>
                 <div className="space-y-2">
-                  {result.details.map((detail: any, index: number) => (
+                  {result.details.map((detail: ValidationDetail, index: number) => (
                     <div key={index} className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
                       <div className="font-medium text-sm">{detail.field}</div>
                       <div className="text-sm text-gray-600">{detail.message}</div>

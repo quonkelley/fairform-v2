@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { caseCreationMonitor } from "@/lib/monitoring/case-creation-monitor";
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // In production, you might want to add authentication/authorization here
     // to ensure only authorized users can access monitoring data
