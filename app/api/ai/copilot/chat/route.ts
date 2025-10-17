@@ -9,9 +9,10 @@ import {
   appendMessage,
   getSession,
   updateSessionCase,
+  updateContextSnapshot,
   listMessages,
 } from "@/lib/db/aiSessionsRepo";
-import type { AISession, ConversationStage, MinimumCaseInfo } from "@/lib/ai/types";
+import type { AISession, ConversationStage, MinimumCaseInfo, ContextSnapshot, CaseType } from "@/lib/ai/types";
 import { 
   extractCaseInfo, 
   buildAppStateContext, 
@@ -73,6 +74,25 @@ Conversation Flow Rules:
 - When [case_creation_success] appears in context, celebrate the success and provide the case link: "🎉 Great! Your case has been created. [View your case →](/cases/{case_id})"
 - When [case_creation_error] appears in context, acknowledge the issue and suggest alternatives or retry options
 - After case creation, suggest next step: "Generate your plan" or "Fill the Appearance form"
+
+FORM DETECTION:
+When the user mentions any of these phrases:
+- "I need to file an appearance"
+- "How do I appear in court"
+- "I want to represent myself"
+- "File appearance form"
+- "I need to file a form"
+- "Help me with court forms"
+
+Respond with helpful text AND include this JSON object at the END of your message (not in the middle):
+{
+  "formSuggestion": {
+    "formId": "marion-appearance",
+    "reason": "You need to file an Appearance form to notify the court you're representing yourself."
+  }
+}
+
+Say something like: "It looks like you need to file an Appearance form. This tells the court you're representing yourself. Would you like me to help you fill it out? It only takes a few minutes."
 
 Your role:
 - Provide helpful guidance and information about legal processes
@@ -278,9 +298,9 @@ export async function POST(request: NextRequest) {
 
       // Extract conversation state from session metadata if available
       if (session.contextSnapshot) {
-        // Try to reconstruct conversation state from context snapshot
-        conversationStage = 'GATHER_MIN'; // Default to gather_min for existing sessions
-        collectedInfo = {
+        // Restore conversation stage from context snapshot
+        conversationStage = session.contextSnapshot.conversationStage || 'GATHER_MIN';
+        collectedInfo = session.contextSnapshot.collectedInfo || {
           caseType: session.contextSnapshot.caseType,
           jurisdiction: session.contextSnapshot.jurisdiction,
         };
@@ -302,6 +322,31 @@ export async function POST(request: NextRequest) {
 
     // Determine next conversation stage
     conversationStage = getNextStage(conversationStage, collectedInfo, message);
+
+    // Persist conversation stage and collected info to session
+    // Note: Filter out undefined values - Firestore requires null instead of undefined
+    // Clean collectedInfo to remove undefined fields
+    const cleanedCollectedInfo: Partial<MinimumCaseInfo> = {};
+    if (collectedInfo.caseType) cleanedCollectedInfo.caseType = collectedInfo.caseType;
+    if (collectedInfo.jurisdiction) cleanedCollectedInfo.jurisdiction = collectedInfo.jurisdiction;
+    if (collectedInfo.caseNumber) cleanedCollectedInfo.caseNumber = collectedInfo.caseNumber;
+    if (collectedInfo.hearingDate) cleanedCollectedInfo.hearingDate = collectedInfo.hearingDate;
+    
+    const snapshotUpdate: Partial<ContextSnapshot> = {
+      ...session.contextSnapshot,
+      conversationStage,
+      collectedInfo: cleanedCollectedInfo,
+    };
+    
+    // Only set caseType and jurisdiction if they have values (Firestore doesn't accept undefined)
+    if (collectedInfo.caseType) {
+      snapshotUpdate.caseType = collectedInfo.caseType as CaseType;
+    }
+    if (collectedInfo.jurisdiction) {
+      snapshotUpdate.jurisdiction = collectedInfo.jurisdiction;
+    }
+    
+    await updateContextSnapshot(session.id, snapshotUpdate);
 
     // Handle case creation if user confirmed
     let caseCreationResult = null;
@@ -509,6 +554,11 @@ async function handleSSEResponse(
           encoder.encode(`event: done\ndata: ${JSON.stringify(doneEvent)}\n\n`)
         );
 
+        // Send final completion event
+        controller.enqueue(
+          encoder.encode(`data: [DONE]\n\n`)
+        );
+
         await appendMessage(session.id, {
           author: "assistant",
           content: moderationResult.blocked ? SAFE_ASSISTANT_FALLBACK_RESPONSE : fullResponse,
@@ -525,11 +575,19 @@ async function handleSSEResponse(
           retryable: aiError?.retryable ?? false,
         };
 
-        controller.enqueue(
-          encoder.encode(`event: error\ndata: ${JSON.stringify(errorEvent)}\n\n`)
-        );
+        try {
+          controller.enqueue(
+            encoder.encode(`event: error\ndata: ${JSON.stringify(errorEvent)}\n\n`)
+          );
+        } catch (enqueueError) {
+          console.error("Failed to enqueue error event:", enqueueError);
+        }
 
-        controller.error(error);
+        try {
+          controller.close();
+        } catch (closeError) {
+          console.error("Failed to close controller:", closeError);
+        }
       }
     },
   });

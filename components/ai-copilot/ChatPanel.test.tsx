@@ -53,17 +53,24 @@ vi.mock('@/lib/hooks/useAICopilot', () => ({
 global.fetch = vi.fn();
 
 // Mock EventSource to ensure SSE is supported in tests
-global.EventSource = vi.fn().mockImplementation(() => ({
+const EventSourceMock = vi.fn().mockImplementation(() => ({
   close: vi.fn(),
   addEventListener: vi.fn(),
   removeEventListener: vi.fn(),
   readyState: 1,
   url: '',
   withCredentials: false,
+}));
+
+// Add static properties to the mock
+Object.assign(EventSourceMock, {
   CONNECTING: 0,
   OPEN: 1,
   CLOSED: 2,
-}));
+});
+
+// @ts-expect-error - Mock for testing
+global.EventSource = EventSourceMock;
 
 describe('ChatPanel', () => {
   const defaultProps = {
@@ -76,7 +83,7 @@ describe('ChatPanel', () => {
     // Reset fetch mock
     (global.fetch as jest.Mock).mockClear();
     // Reset EventSource mock
-    (global.EventSource as jest.Mock).mockClear();
+    (global.EventSource as jest.MockedFunction<typeof EventSource>).mockClear();
   });
 
   describe('Rendering', () => {

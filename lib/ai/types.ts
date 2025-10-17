@@ -87,6 +87,8 @@ export interface ContextSnapshot {
   currentStepOrder?: number;
   progressPct?: number;
   userPrefs?: UserPreferences;
+  conversationStage?: ConversationStage; // Track conversation stage for case creation flow
+  collectedInfo?: MinimumCaseInfo; // Store collected case information
   hash: string; // SHA-256 hash for deduplication and caching
 }
 
@@ -119,7 +121,7 @@ export interface MessageMeta {
   latencyMs?: number; // Processing time in milliseconds
   blocked?: boolean; // Moderation result
   model?: string; // AI model used (e.g., "gpt-4o-mini")
-  status?: 'sending' | 'sent' | 'failed'; // Message delivery status
+  status?: 'sending' | 'sent' | 'failed' | 'streaming'; // Message delivery status
   moderation?: {
     flaggedCategories: string[];
   };

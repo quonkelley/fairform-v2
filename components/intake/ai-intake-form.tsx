@@ -65,7 +65,7 @@ export function AIIntakeForm({ onSuccess, initialText }: AIIntakeFormProps) {
       if (name === 'text' && value.text) {
         // Debounce: save after 1 second of no typing
         const timeoutId = setTimeout(() => {
-          saveToContext(value.text);
+          saveToContext(value.text!);
         }, 1000);
         
         return () => clearTimeout(timeoutId);

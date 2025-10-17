@@ -105,9 +105,9 @@ describe('contextBuilder', () => {
 
       const mockMessages = {
         items: [
-          { author: 'user', content: 'I need help with my case' },
-          { author: 'assistant', content: 'I can help you with that' },
-          { author: 'user', content: 'What should I do next?' }
+          { id: 'msg-1', sessionId: 'session-789', author: 'user' as const, content: 'I need help with my case', createdAt: Date.now() },
+          { id: 'msg-2', sessionId: 'session-789', author: 'assistant' as const, content: 'I can help you with that', createdAt: Date.now() },
+          { id: 'msg-3', sessionId: 'session-789', author: 'user' as const, content: 'What should I do next?', createdAt: Date.now() }
         ],
         hasMore: false
       };
@@ -423,9 +423,9 @@ describe('contextBuilder', () => {
 
       const mockMessages = {
         items: [
-          { author: 'user', content: 'I need help with my eviction case' },
-          { author: 'assistant', content: 'I can help you with eviction procedures' },
-          { author: 'user', content: 'What documents do I need?' }
+          { id: 'msg-1', sessionId: 'session-789', author: 'user' as const, content: 'I need help with my eviction case', createdAt: Date.now() },
+          { id: 'msg-2', sessionId: 'session-789', author: 'assistant' as const, content: 'I can help you with eviction procedures', createdAt: Date.now() },
+          { id: 'msg-3', sessionId: 'session-789', author: 'user' as const, content: 'What documents do I need?', createdAt: Date.now() }
         ],
         hasMore: false
       };

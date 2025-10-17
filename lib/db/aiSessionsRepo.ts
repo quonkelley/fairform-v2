@@ -219,12 +219,12 @@ export async function listMessages(
  * Update a session's context snapshot
  *
  * @param sessionId - Session ID to update
- * @param snapshot - Partial context snapshot to update
+ * @param snapshot - Context snapshot to update (full or partial)
  * @throws AISessionsRepositoryError if update fails
  */
 export async function updateContextSnapshot(
   sessionId: string,
-  snapshot: Partial<ContextSnapshot>
+  snapshot: ContextSnapshot | Partial<ContextSnapshot>
 ): Promise<void> {
   try {
     const db = getDb();
@@ -385,6 +385,137 @@ export async function deleteOldSessions(days: number): Promise<number> {
   } catch (error) {
     console.error("Failed to delete old sessions", { days, error });
     throw new AISessionsRepositoryError("Unable to delete old sessions", { cause: error });
+  }
+}
+
+/**
+ * Get total session count
+ *
+ * @returns Total number of sessions
+ * @throws AISessionsRepositoryError if count fails
+ */
+export async function getSessionCount(): Promise<number> {
+  try {
+    const db = getDb();
+    const snapshot = await db.collection(SESSIONS_COLLECTION).count().get();
+    return snapshot.data().count;
+  } catch (error) {
+    console.error("Failed to get session count", { error });
+    throw new AISessionsRepositoryError("Unable to get session count", { cause: error });
+  }
+}
+
+/**
+ * Get active session count
+ *
+ * @returns Number of active sessions
+ * @throws AISessionsRepositoryError if count fails
+ */
+export async function getActiveSessionCount(): Promise<number> {
+  try {
+    const db = getDb();
+    const snapshot = await db
+      .collection(SESSIONS_COLLECTION)
+      .where("status", "==", "active")
+      .count()
+      .get();
+    return snapshot.data().count;
+  } catch (error) {
+    console.error("Failed to get active session count", { error });
+    throw new AISessionsRepositoryError("Unable to get active session count", { cause: error });
+  }
+}
+
+/**
+ * Get archived session count
+ *
+ * @returns Number of archived sessions
+ * @throws AISessionsRepositoryError if count fails
+ */
+export async function getArchivedSessionCount(): Promise<number> {
+  try {
+    const db = getDb();
+    const snapshot = await db
+      .collection(SESSIONS_COLLECTION)
+      .where("status", "==", "archived")
+      .count()
+      .get();
+    return snapshot.data().count;
+  } catch (error) {
+    console.error("Failed to get archived session count", { error });
+    throw new AISessionsRepositoryError("Unable to get archived session count", { cause: error });
+  }
+}
+
+/**
+ * Delete a session and all its messages
+ *
+ * @param sessionId - Session ID to delete
+ * @throws AISessionsRepositoryError if deletion fails
+ */
+export async function deleteSession(sessionId: string): Promise<void> {
+  try {
+    const db = getDb();
+
+    // First, delete all messages in the subcollection
+    const messagesSnapshot = await db
+      .collection(SESSIONS_COLLECTION)
+      .doc(sessionId)
+      .collection(MESSAGES_SUBCOLLECTION)
+      .get();
+
+    // Delete messages in batches (Firestore batch limit is 500)
+    const batches: FirebaseFirestore.WriteBatch[] = [];
+    let currentBatch = db.batch();
+    let operationCount = 0;
+
+    messagesSnapshot.docs.forEach((doc) => {
+      currentBatch.delete(doc.ref);
+      operationCount++;
+
+      if (operationCount === 500) {
+        batches.push(currentBatch);
+        currentBatch = db.batch();
+        operationCount = 0;
+      }
+    });
+
+    // Add remaining operations
+    if (operationCount > 0) {
+      batches.push(currentBatch);
+    }
+
+    // Commit all batches
+    await Promise.all(batches.map((batch) => batch.commit()));
+
+    // Finally, delete the session document
+    await db.collection(SESSIONS_COLLECTION).doc(sessionId).delete();
+  } catch (error) {
+    console.error("Failed to delete session", { sessionId, error });
+    throw new AISessionsRepositoryError("Unable to delete session", { cause: error });
+  }
+}
+
+/**
+ * Update session fields
+ *
+ * @param sessionId - Session ID to update
+ * @param updates - Fields to update
+ * @throws AISessionsRepositoryError if update fails
+ */
+export async function updateSession(
+  sessionId: string,
+  updates: Partial<Omit<AISession, "id">>
+): Promise<void> {
+  try {
+    const db = getDb();
+    await db.collection(SESSIONS_COLLECTION).doc(sessionId).update({
+      ...updates,
+      updatedAt: Date.now(),
+    });
+  } catch (error) {
+    console.error("Failed to update session", { sessionId, updates, error });
+    throw new AISessionsRepositoryError("Unable to update session", { cause: error });
   }
 }
 

@@ -4,14 +4,13 @@
  * Story: 13.8 - Conversation Summarization
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { AIMessage } from './types';
 import {
   getSlidingWindow,
   shouldSummarize,
   estimateTokens,
   extractTopics,
-  summarizeConversation,
   summarizeWithFallback,
   generateProblemDescription,
 } from './summarization';

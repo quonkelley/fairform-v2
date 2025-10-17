@@ -69,7 +69,6 @@ export class GlossaryService {
   detectTerms(text: string, context: GlossaryContext = {}): TermMatch[] {
     const matches: TermMatch[] = [];
     const lowerText = text.toLowerCase();
-    const words = lowerText.split(/\s+/);
 
     // Check each term in the glossary
     for (const [termKey, term] of this.glossaryTerms) {
@@ -82,7 +81,7 @@ export class GlossaryService {
       const positions = this.findTermPositions(lowerText, termKey);
 
       positions.forEach(position => {
-        const relevance = this.calculateRelevance(term, context, text, position);
+        const relevance = this.calculateRelevance(term, context);
         
         if (relevance > 0.3) { // Only include relevant matches
           matches.push({
@@ -152,9 +151,7 @@ export class GlossaryService {
    */
   private calculateRelevance(
     term: GlossaryTerm,
-    context: GlossaryContext,
-    text: string,
-    position: number
+    context: GlossaryContext
   ): number {
     let relevance = 0.5; // Base relevance
 

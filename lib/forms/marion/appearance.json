@@ -1,0 +1,136 @@
+{
+  "formId": "marion-appearance",
+  "title": "Appearance Form",
+  "jurisdiction": "marion-county-in",
+  "description": "File an appearance with Marion County courts to notify them you are representing yourself or have legal representation.",
+  "templateUrl": "/templates/marion-appearance-template.pdf",
+  "fields": [
+    {
+      "id": "case_number",
+      "label": "Case Number",
+      "type": "text",
+      "required": true,
+      "pdfFieldName": "case_number",
+      "placeholder": "XX-XX-XXXX-XX-XXXXXX",
+      "helpText": "Find this on your court documents"
+    },
+    {
+      "id": "county",
+      "label": "County",
+      "type": "text",
+      "required": true,
+      "pdfFieldName": "county",
+      "placeholder": "Marion"
+    },
+    {
+      "id": "court_room",
+      "label": "Court Room",
+      "type": "text",
+      "required": false,
+      "pdfFieldName": "court_room",
+      "placeholder": "Room number or division"
+    },
+    {
+      "id": "plaintiff_name",
+      "label": "Plaintiff Name",
+      "type": "text",
+      "required": true,
+      "pdfFieldName": "plaintiff_name",
+      "helpText": "The person or entity who filed the case"
+    },
+    {
+      "id": "defendant_name",
+      "label": "Your Full Legal Name (Defendant)",
+      "type": "text",
+      "required": true,
+      "pdfFieldName": "defendant_name",
+      "helpText": "Enter your complete legal name as it appears on legal documents"
+    },
+    {
+      "id": "defendant_address",
+      "label": "Your Address",
+      "type": "text",
+      "required": true,
+      "pdfFieldName": "defendant_address",
+      "helpText": "Street address where you can receive court mail"
+    },
+    {
+      "id": "defendant_city",
+      "label": "City",
+      "type": "text",
+      "required": true,
+      "pdfFieldName": "defendant_city"
+    },
+    {
+      "id": "defendant_state",
+      "label": "State",
+      "type": "text",
+      "required": true,
+      "pdfFieldName": "defendant_state",
+      "placeholder": "IN"
+    },
+    {
+      "id": "defendant_zip",
+      "label": "ZIP Code",
+      "type": "text",
+      "required": true,
+      "pdfFieldName": "defendant_zip",
+      "placeholder": "46201"
+    },
+    {
+      "id": "defendant_phone",
+      "label": "Phone Number",
+      "type": "text",
+      "required": true,
+      "pdfFieldName": "defendant_phone",
+      "placeholder": "(317) 555-0100"
+    },
+    {
+      "id": "defendant_email",
+      "label": "Email Address",
+      "type": "text",
+      "required": false,
+      "pdfFieldName": "defendant_email",
+      "helpText": "Optional but recommended for court notifications"
+    },
+    {
+      "id": "self_represented",
+      "label": "I am representing myself (pro se)",
+      "type": "checkbox",
+      "required": false,
+      "pdfFieldName": "self_represented"
+    },
+    {
+      "id": "attorney_name",
+      "label": "Attorney Name (if represented)",
+      "type": "text",
+      "required": false,
+      "pdfFieldName": "attorney_name",
+      "helpText": "Leave blank if representing yourself"
+    },
+    {
+      "id": "attorney_bar_number",
+      "label": "Attorney Bar Number",
+      "type": "text",
+      "required": false,
+      "pdfFieldName": "attorney_bar_number"
+    },
+    {
+      "id": "hearing_date",
+      "label": "Next Hearing Date",
+      "type": "date",
+      "required": false,
+      "pdfFieldName": "hearing_date",
+      "helpText": "If you know the date of your next hearing"
+    },
+    {
+      "id": "filing_date",
+      "label": "Date of Filing",
+      "type": "date",
+      "required": true,
+      "pdfFieldName": "filing_date",
+      "helpText": "Today's date (when you're submitting this form)"
+    }
+  ]
+}
+

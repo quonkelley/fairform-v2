@@ -1,0 +1,33 @@
+rules_version = '2';
+
+// Firebase Storage Security Rules for FairForm
+// Manages access to PDF templates and completed forms
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Form Templates - Read-only for authenticated users
+    match /forms/templates/{allPaths=**} {
+      // Any authenticated user can read templates
+      allow read: if request.auth != null;
+
+      // Only admins can write (templates uploaded manually, not via app)
+      allow write: if false;
+    }
+
+    // Completed Forms - User-specific access
+    match /forms/completed/{userId}/{allPaths=**} {
+      // Users can only access their own completed forms
+      allow read, write: if request.auth != null
+                         && request.auth.uid == userId;
+
+      // Optional: Add file size limit (10MB)
+      allow write: if request.resource.size < 10 * 1024 * 1024;
+    }
+
+    // Deny all other paths
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

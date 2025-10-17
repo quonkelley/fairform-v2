@@ -53,6 +53,14 @@ export const CaseSchema = z.object({
   updatedAt: z.date(),
   title: z.string().optional(),
   notes: z.string().nullable().optional(),
+  // Additional properties for case data
+  caseNumber: z.string().optional(),
+  nextHearingDate: z.date().optional(),
+  defendant: z.string().optional(),
+  plaintiff: z.string().optional(),
+  court: z.string().optional(),
+  filingDate: z.date().optional(),
+  propertyAddress: z.string().optional(),
 });
 
 export type Case = z.infer<typeof CaseSchema>;

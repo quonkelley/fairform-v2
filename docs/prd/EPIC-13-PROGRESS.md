@@ -189,6 +189,309 @@ User Decision:
 
 ---
 
+## Phase 4: Case Creation Enhancement (Stories 13.27-13.43) 🚀
+
+**Status:** 📋 Planned  
+**Goal:** Enhance case creation UX with better extraction, document upload, and intelligent guidance  
+**Priority:** High (improves core feature)  
+**Total Effort:** ~61 hours (~8 days) - includes research-based enhancements  
+**Original Stories (13.27-13.40):** 47 hours  
+**Research-Based Additions (13.41-13.43):** 14 hours  
+**Dependencies:** 13.21-13.26 (Case creation foundation - Complete)
+
+---
+
+### Quick Wins (Sprint 1 - ~8 hours)
+
+#### Story 13.27: Visual Progress Indicator
+**Effort:** 2 hours | **Value:** High ⭐  
+**Goal:** Show users what case info is collected vs. needed
+
+**Features:**
+- Real-time checklist showing 3 required items
+- Checkmark states (✓ collected, ○ needed)
+- Updates dynamically as info is extracted
+- Collapses when all requirements met
+
+**Impact:** Users always know what's missing, reducing drop-offs
+
+---
+
+#### Story 13.28: Context-Aware Quick Action Buttons
+**Effort:** 3 hours | **Value:** High ⭐  
+**Dependencies:** 13.27
+
+**Goal:** Add suggestion chips that adapt based on conversation stage
+
+**Features:**
+- Case type buttons when none selected (Eviction, Small Claims, Family Law)
+- Location quick-picks after case type selected
+- Confirm/edit buttons when ready for creation
+- Clicking chip sends message automatically
+
+**Impact:** Reduces typing, speeds up case creation
+
+---
+
+#### Story 13.29: Smart Follow-Up Questions
+**Effort:** 3 hours | **Value:** High ⭐  
+**Dependencies:** 13.21 (intent detection)
+
+**Goal:** AI proactively asks for missing required information
+
+**Features:**
+- Asks for jurisdiction after case type identified
+- Case-type-specific questions (e.g., hearing date for evictions)
+- Never repeats questions for already-collected info
+- Questions feel natural in conversation flow
+
+**Impact:** Higher completion rate, less user confusion
+
+---
+
+### Game Changers (Sprint 2 - ~16 hours)
+
+#### Story 13.30: Document Upload & OCR Extraction 🔥
+**Effort:** 6 hours | **Value:** Very High 🔥  
+**Goal:** Allow users to upload eviction notice/court documents for automatic extraction
+
+**Features:**
+- Supports image upload (PNG, JPG) and PDF
+- Uses GPT-4 Vision to extract case #, hearing date, jurisdiction
+- Shows extracted info with confidence indicators
+- Asks user to verify low-confidence extractions
+- Graceful fallback if extraction fails
+
+**Impact:** Fastest case creation path, major differentiator
+
+---
+
+#### Story 13.31: Structured Information Extraction (GPT Functions)
+**Effort:** 4 hours | **Value:** High  
+**Replaces:** Current regex patterns in `conversationStages.ts`
+
+**Goal:** Use OpenAI function calling for more accurate entity extraction
+
+**Features:**
+- Extracts case type with 90%+ accuracy
+- Handles jurisdiction variations (city, county, state names/abbreviations)
+- Extracts dates in various formats
+- Returns confidence scores for each field
+
+**Impact:** Dramatically improved extraction accuracy
+
+---
+
+#### Story 13.32: Extraction Confidence & Validation UI
+**Effort:** 3 hours | **Value:** High  
+**Dependencies:** 13.31
+
+**Goal:** Show confidence scores and allow inline editing of extracted info
+
+**Features:**
+- Shows amber warning for <70% confidence fields
+- Provides inline edit buttons for each field
+- "Looks good?" confirmation for borderline extractions
+- Tracks correction patterns to improve future extractions
+
+**Impact:** Fewer errors, user trust in AI extraction
+
+---
+
+#### Story 13.33: Case Type-Specific Urgency Detection ⚠️
+**Effort:** 3 hours | **Value:** High  
+**Goal:** Detect time-sensitive cases and show urgent warnings
+
+**Features:**
+- Detects phrases like "tomorrow", "3 days", "this week"
+- Shows red alert banner for evictions with <7 days to hearing
+- Prioritizes urgent cases in creation flow
+- Suggests immediate actions for urgent cases
+
+**Impact:** Helps users with time-critical legal issues
+
+---
+
+### Enhanced Experience (Sprint 3 - ~17 hours)
+
+#### Story 13.34: Case Preview Before Creation
+**Effort:** 2 hours | **Value:** Medium  
+**Dependencies:** 13.22 (confirmation UI)
+
+**Goal:** Show formatted case summary card before final creation
+
+**Features:**
+- Shows all collected information in clean format
+- Provides "Edit" option for each field
+- "Create Case" primary button
+- "Start Over" secondary option
+
+---
+
+#### Story 13.35: Multi-Language Support
+**Effort:** 8 hours | **Value:** High (for target demographics)
+
+**Goal:** Detect user language and provide localized experience
+
+**Features:**
+- Auto-detects Spanish, Chinese, Vietnamese, Arabic
+- Translates AI responses to user's language
+- Accepts input in user's language, extracts in English
+- Shows language selector in UI
+
+**Impact:** Accessible to non-English speakers
+
+---
+
+#### Story 13.36: Voice Input Support
+**Effort:** 4 hours | **Value:** Medium (accessibility)
+
+**Goal:** Add speech-to-text for hands-free case creation
+
+**Features:**
+- Microphone button in chat input
+- Uses Web Speech API or Whisper
+- Real-time transcription display
+- Works on mobile devices
+
+---
+
+#### Story 13.37: Save & Resume Case Creation
+**Effort:** 3 hours | **Value:** Medium  
+**Dependencies:** Session management (13.1)
+
+**Goal:** Allow users to save partial case info and return later
+
+**Features:**
+- "Save for Later" button during gathering
+- Email reminder after 24 hours
+- Deep link returns to exact conversation state
+- Shows progress percentage on resume
+
+---
+
+### Quality & Analytics (Sprint 4 - ~6 hours)
+
+#### Story 13.38: Duplicate Case Detection
+**Effort:** 2 hours | **Value:** Medium
+
+**Goal:** Warn users if creating potentially duplicate case
+
+**Features:**
+- Checks for matching case type + case number
+- Shows warning with link to existing case
+- Allows override if truly different case
+- Logs duplicate detection analytics
+
+---
+
+#### Story 13.39: Case Creation Analytics & Metrics
+**Effort:** 2 hours | **Value:** Medium (product insights)
+
+**Goal:** Track case creation funnel and drop-off points
+
+**Features:**
+- Tracks: started, abandoned (stage), completed
+- Records: time-to-complete, messages exchanged
+- Identifies most common drop-off stage
+- Dashboard shows conversion rate by case type
+
+---
+
+#### Story 13.40: Success Celebration & Onboarding
+**Effort:** 2 hours | **Value:** Low (polish)
+
+**Goal:** Make case creation feel rewarding and guide next steps
+
+**Features:**
+- Confetti animation on success
+- "What's Next" section with 3 recommended actions
+- Option to immediately jump to first case step
+- Share success (optional, social proof)
+- **[Research] Three-tier graceful failure system**
+- **[Research] Support escalation with conversation context**
+
+---
+
+### Research-Based Enhancements (Stories 13.41-13.43)
+
+#### Story 13.41: Enhanced System Prompt V2 🔥
+**Effort:** 3 hours (1 hour impl + 2 hours testing) | **Value:** Very High ⭐⭐⭐  
+**Priority:** HIGH - Quick Win  
+**Goal:** Implement research-backed prompt improvements for better accuracy and trust
+
+**Features:**
+- Explicit error handling instructions (what to do when can't help)
+- Disambiguation protocol (never guess, always clarify)
+- Source citation requirements (builds trust)
+- Structured output formatting standards
+- Enhanced limitation boundaries
+
+**Impact:** 30% reduction in user confusion, 40% increase in trust, 25% faster completion
+
+**Research Source:** Building Legal AI Chatbot - Sections 3.1, 3.2, 6.2, 7.2
+
+---
+
+#### Story 13.42: Vector Database & RAG for Case Memory
+**Effort:** 8 hours | **Value:** High (long-term memory)  
+**Priority:** MEDIUM - Infrastructure  
+**Goal:** Enable true long-term, cross-session memory with semantic search
+
+**Features:**
+- Integrate vector database (Pinecone/Chroma/Weaviate)
+- Embed case documents, messages, journey steps
+- Semantic search: "What did I say about..."
+- Cross-session memory beyond 30-day saved conversations
+- Retrieve relevant context automatically
+
+**Impact:** Unlimited conversation length, semantic understanding, persistent knowledge
+
+**Research Source:** Building Legal AI Chatbot - Section 2.4 (RAG Architecture)
+
+**Technical Details:**
+- OpenAI Embeddings API for vector creation
+- Vector DB for efficient similarity search
+- Automatic chunking of long documents
+- Metadata filtering (case_id, date, user_id)
+
+---
+
+#### Story 13.43: Audit Logging & Compliance
+**Effort:** 3 hours | **Value:** Medium (legal compliance)  
+**Priority:** LOW - Quality & Risk Management  
+**Goal:** Create immutable audit trail for legal defensibility
+
+**Features:**
+- Log all AI interactions with timestamps
+- Record: prompt + response + function calls + user decisions
+- Track user approval/rejection of AI suggestions
+- Immutable audit trail in Firestore
+- Export for compliance reviews
+- Retention policy (7 years for legal)
+
+**Impact:** Legal defensibility, compliance readiness, debugging capability
+
+**Research Source:** Building Legal AI Chatbot - Section 6.3 (Human-in-Loop Supervision)
+
+**Schema:**
+```typescript
+interface AuditLog {
+  id: string;
+  sessionId: string;
+  userId: string;
+  timestamp: Timestamp;
+  action: 'chat_message' | 'case_created' | 'function_called' | 'user_approval';
+  prompt?: string;
+  response?: string;
+  functionCalls?: Array<{ name: string; args: any; result: any }>;
+  userDecision?: 'approved' | 'rejected' | 'modified';
+  metadata: Record<string, any>;
+}
+```
+
+---
+
 ## Future Stories 📅
 
 ### Post-Creation Assistance
@@ -200,11 +503,6 @@ User Decision:
 - AI explains specific journey steps
 - Context-aware help for current step
 - Glossary integration inline
-
-### Document Upload Support
-- Allow users to upload documents
-- Extract information from PDFs
-- Pre-fill case details from documents
 
 ---
 

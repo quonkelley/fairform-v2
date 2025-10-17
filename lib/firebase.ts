@@ -6,6 +6,7 @@ import {
   type Auth,
 } from "firebase/auth";
 import { getFirestore, type Firestore } from "firebase/firestore";
+import { getStorage, type FirebaseStorage } from "firebase/storage";
 import { getFirebaseConfig, validateFirebaseConfig } from "./config/demo";
 
 function createFirebaseApp() {
@@ -18,6 +19,7 @@ const firebaseApp: FirebaseApp = !getApps().length ? createFirebaseApp() : getAp
 
 let authInstance: Auth | null = null;
 let firestoreInstance: Firestore | null = null;
+let storageInstance: FirebaseStorage | null = null;
 
 export function getFirebaseAuth(): Auth {
   if (authInstance) {
@@ -41,4 +43,13 @@ export function getFirestoreDb(): Firestore {
 
   firestoreInstance = getFirestore(firebaseApp);
   return firestoreInstance;
+}
+
+export function getFirebaseStorage(): FirebaseStorage {
+  if (storageInstance) {
+    return storageInstance;
+  }
+
+  storageInstance = getStorage(firebaseApp);
+  return storageInstance;
 }

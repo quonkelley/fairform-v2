@@ -7,8 +7,10 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { CaseConfirmationCard } from './CaseConfirmationCard';
 import { SuggestionChips, type SuggestionChip } from './SuggestionChips';
+import { FormSession } from './FormSession';
 import { useAICopilot } from '@/lib/hooks/useAICopilot';
 import { useAuth } from '@/components/auth/auth-context';
+import type { Case } from '@/lib/db/types';
 
 export type Message = {
   id: string;
@@ -26,6 +28,10 @@ export type Message = {
     caseType?: string;
     details?: Record<string, string | undefined>;
     readinessScore?: number;
+    formSuggestion?: {
+      formId: string;
+      reason: string;
+    };
   };
 };
 
@@ -367,12 +373,15 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
   const { user } = useAuth();
   const [inputValue, setInputValue] = useState('');
   const [showSuggestionChips, setShowSuggestionChips] = useState(false);
+  const [formSessionActive, setFormSessionActive] = useState(false);
+  const [activeFormId, setActiveFormId] = useState<string | null>(null);
+  const [caseData] = useState<Case | undefined>(undefined);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   // Use the AI Copilot hook for proper authentication and message handling
-  // Don't auto-create session here - let the provider handle that
+  // Use initialSessionId if provided, otherwise auto-create a session
   const {
     sessionId,
     messages: aiMessages,
@@ -384,7 +393,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
   } = useAICopilot({
     sessionId: initialSessionId,
     caseId,
-    autoCreateSession: false, // Disable auto-creation to avoid duplicate sessions
+    autoCreateSession: !initialSessionId, // Only auto-create if no sessionId provided
     enableStreaming: true,
   });
 
@@ -414,6 +423,55 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
       type: 'normal' as const,
       meta: msg.meta,
     }));
+
+  // Check for form suggestions in messages
+  useEffect(() => {
+    if (messages.length > 0) {
+      const lastMessage = messages[messages.length - 1];
+      
+      // Check if the assistant suggested a form
+      if (lastMessage.author === 'assistant' && lastMessage.content) {
+        // Look for form suggestion pattern in the message
+        const formSuggestionPattern = /"formSuggestion":\s*{[^}]+}/;
+        const match = lastMessage.content.match(formSuggestionPattern);
+        
+        if (match) {
+          try {
+            // Extract and parse the JSON object
+            const jsonStr = `{${match[0]}}`;
+            const parsed = JSON.parse(jsonStr);
+            
+            if (parsed.formSuggestion?.formId) {
+              // Store the form suggestion for potential activation
+              setActiveFormId(parsed.formSuggestion.formId);
+              
+              // Auto-show form if user just asked for it
+              const previousUserMessage = messages[messages.length - 2];
+              if (previousUserMessage?.author === 'user' && 
+                  previousUserMessage.content.toLowerCase().includes('yes') ||
+                  previousUserMessage.content.toLowerCase().includes('help me fill')) {
+                setFormSessionActive(true);
+              }
+            }
+          } catch (e) {
+            console.log('Could not parse form suggestion:', e);
+          }
+        }
+      }
+      
+      // Check if user is accepting a form suggestion
+      if (lastMessage.author === 'user' && activeFormId && !formSessionActive) {
+        const userResponse = lastMessage.content.toLowerCase();
+        if (userResponse.includes('yes') || 
+            userResponse.includes('sure') || 
+            userResponse.includes('ok') ||
+            userResponse.includes('help me') ||
+            userResponse.includes('fill it out')) {
+          setFormSessionActive(true);
+        }
+      }
+    }
+  }, [messages, activeFormId, formSessionActive]);
 
   // Auto-scroll to bottom when new messages arrive
   const scrollToBottom = useCallback(() => {
@@ -575,47 +633,75 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             </button>
           </div>
 
-          {/* Messages area */}
+          {/* Messages area or Form Session */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            {messages.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full text-center">
-                <div>
-                  <Bot className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">
-                    Welcome to AI Copilot
-                  </h3>
-                  <p className="text-gray-500 mb-4">
-                    Hi! I&apos;m FairForm. Tell me what happened or upload a photo of your court notice. I&apos;ll create your case and show next steps in under 2 minutes.
-                  </p>
-                  {showSuggestionChips && (
-                    <SuggestionChips 
-                      chips={suggestionChips}
-                    />
-                  )}
-                </div>
-              </div>
+            {formSessionActive && activeFormId ? (
+              <FormSession
+                formId={activeFormId}
+                caseId={caseId || ''}
+                caseData={caseData}
+                onComplete={async (formData) => {
+                  console.log('Form completed with data:', formData);
+                  setFormSessionActive(false);
+                  
+                  // Send completion message to chat
+                  await sendMessage(
+                    `Form completed! The ${activeFormId} form has been filled out and is ready to download.`
+                  );
+                  
+                  // Clear the active form
+                  setActiveFormId(null);
+                }}
+                onCancel={() => {
+                  setFormSessionActive(false);
+                  // Optionally send a message that form was cancelled
+                  sendMessage('Form filling cancelled. How else can I help you?');
+                }}
+              />
             ) : (
               <>
-                {messages.map((message) => (
-                  <MessageBubble key={message.id} message={message} />
-                ))}
-                {showSuggestionChips && (
-                  <SuggestionChips 
-                    chips={suggestionChips}
-                  />
+                {messages.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-full text-center">
+                    <div>
+                      <Bot className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">
+                        Welcome to AI Copilot
+                      </h3>
+                      <p className="text-gray-500 mb-4">
+                        Hi! I&apos;m FairForm. Tell me what happened or upload a photo of your court notice. I&apos;ll create your case and show next steps in under 2 minutes.
+                      </p>
+                      {showSuggestionChips && (
+                        <SuggestionChips 
+                          chips={suggestionChips}
+                        />
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    {messages.map((message) => (
+                      <MessageBubble key={message.id} message={message} />
+                    ))}
+                    {showSuggestionChips && (
+                      <SuggestionChips 
+                        chips={suggestionChips}
+                      />
+                    )}
+                  </>
                 )}
+                
+                {isSending && <TypingIndicator />}
+                <div ref={messagesEndRef} />
               </>
             )}
-            
-            {isSending && <TypingIndicator />}
-            <div ref={messagesEndRef} />
           </div>
 
-          {/* Input area */}
-          <div className="border-t border-gray-200 p-4">
-            <div className="flex items-end space-x-2">
-              <div className="flex-1">
-                <textarea
+          {/* Input area - hide when form session is active */}
+          {!formSessionActive && (
+            <div className="border-t border-gray-200 p-4">
+              <div className="flex items-end space-x-2">
+                <div className="flex-1">
+                  <textarea
                   ref={inputRef}
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
@@ -642,10 +728,11 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                 <Send className="w-5 h-5" />
               </button>
             </div>
-            <p className="text-xs text-gray-500 mt-2">
-              Press Enter to send, Shift+Enter for new line
-            </p>
-          </div>
+              <p className="text-xs text-gray-500 mt-2">
+                Press Enter to send, Shift+Enter for new line
+              </p>
+            </div>
+          )}
         </motion.div>
       </motion.div>
     </AnimatePresence>

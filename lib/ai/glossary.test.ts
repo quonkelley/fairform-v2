@@ -23,7 +23,7 @@ const mockGlossaryData: Record<string, GlossaryTerm> = {
     term: 'Default Judgment',
     definition: 'When you don\'t respond or appear, the court can rule against you automatically.',
     context: 'general',
-    relatedTermms: ['default', 'judgment by default'],
+    relatedTerms: ['default', 'judgment by default'],
   },
   'evidence': {
     term: 'Evidence',

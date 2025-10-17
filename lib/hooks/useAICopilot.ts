@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { 
   useQuery, 
   useMutation, 
@@ -119,6 +119,16 @@ export function useAICopilot(options: UseAICopilotOptions = {}): UseAICopilotRet
   const [isSending, setIsSending] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [context, setContext] = useState<AIPromptContext | null>(null);
+  const [isCreatingSession, setIsCreatingSession] = useState(false);
+  const sessionCreationAttempted = useRef(false);
+
+  // Sync providedSessionId with local state when it changes
+  useEffect(() => {
+    if (providedSessionId && providedSessionId !== currentSessionId) {
+      console.log('📝 Syncing provided sessionId to local state:', providedSessionId);
+      setCurrentSessionId(providedSessionId);
+    }
+  }, [providedSessionId, currentSessionId]);
 
   // Session query
   const sessionQuery = useQuery({
@@ -188,9 +198,18 @@ export function useAICopilot(options: UseAICopilotOptions = {}): UseAICopilotRet
   // Create session mutation
   const createSessionMutation = useMutation({
     mutationFn: async (options: CreateSessionOptions = {}) => {
-      if (!user) throw new Error('User not authenticated');
+      console.log('🚀 Create session mutation called', { options, user: user?.uid, caseId });
 
+      if (!user) {
+        console.error('❌ User not authenticated');
+        throw new Error('User not authenticated');
+      }
+
+      console.log('🔑 Getting ID token...');
       const idToken = await user.getIdToken();
+      console.log('✅ ID token obtained');
+
+      console.log('📡 Sending POST to /api/ai/sessions');
       const response = await fetch('/api/ai/sessions', {
         method: 'POST',
         headers: {
@@ -204,21 +223,29 @@ export function useAICopilot(options: UseAICopilotOptions = {}): UseAICopilotRet
         }),
       });
 
+      console.log('📥 Response status:', response.status);
+
       if (!response.ok) {
-        throw new Error(`Failed to create session: ${response.status}`);
+        const errorText = await response.text();
+        console.error('❌ Failed to create session:', response.status, errorText);
+        throw new Error(`Failed to create session: ${response.status} - ${errorText}`);
       }
 
       const result = await response.json();
+      console.log('✅ Session created:', result);
       return result.sessionId;
     },
     onSuccess: (newSessionId) => {
+      console.log('✅ Session creation success:', newSessionId);
       setCurrentSessionId(newSessionId);
+      setIsCreatingSession(false);
       setError(null);
       // Invalidate and refetch session data
       queryClient.invalidateQueries({ queryKey: queryKeys.session(newSessionId) });
     },
     onError: (err) => {
-      console.error('Create session error:', err);
+      console.error('❌ Create session mutation error:', err);
+      setIsCreatingSession(false);
       setError(err);
     },
   });
@@ -229,15 +256,18 @@ export function useAICopilot(options: UseAICopilotOptions = {}): UseAICopilotRet
       autoCreateSession,
       currentSessionId,
       user: user?.uid,
-      isPending: createSessionMutation.isPending
+      isPending: createSessionMutation.isPending,
+      isCreatingSession,
+      attempted: sessionCreationAttempted.current
     });
 
-    if (autoCreateSession && !currentSessionId && user && !createSessionMutation.isPending) {
+    if (autoCreateSession && !currentSessionId && user && !createSessionMutation.isPending && !isCreatingSession && !sessionCreationAttempted.current) {
       console.log('📤 Creating session...');
+      sessionCreationAttempted.current = true;
+      setIsCreatingSession(true);
       createSessionMutation.mutate({ caseId });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoCreateSession, currentSessionId, user, caseId]);
+  }, [autoCreateSession, currentSessionId, user, caseId, createSessionMutation.isPending, isCreatingSession, createSessionMutation]);
 
   // Flatten messages from infinite query
   const messages = useMemo(() => {
@@ -297,28 +327,19 @@ export function useAICopilot(options: UseAICopilotOptions = {}): UseAICopilotRet
             const data = line.slice(6);
 
             if (data === '[DONE]') {
-              // Finalize message
-              const finalMessage: AIMessage = {
-                id: assistantMessageId,
-                sessionId,
-                author: 'assistant',
-                content: assistantContent,
-                createdAt: Date.now(),
-                meta: { status: 'sent' }
-              };
-
-              // Add assistant message to cache
+              // Finalize message - update existing streaming message
               queryClient.setQueryData(
                 queryKeys.messages(sessionId),
                 (old: InfiniteData<PaginatedMessages> | undefined) => {
-                  if (!old) return { pages: [{ items: [finalMessage], hasMore: false, total: 1 }] };
-                  const newPages = [...old.pages];
-                  if (newPages.length > 0) {
-                    newPages[0] = {
-                      ...newPages[0],
-                      items: [finalMessage, ...newPages[0].items]
-                    };
-                  }
+                  if (!old) return old;
+                  const newPages = old.pages.map((page: PaginatedMessages) => ({
+                    ...page,
+                    items: page.items.map((msg: AIMessage) =>
+                      msg.id === assistantMessageId
+                        ? { ...msg, content: assistantContent, meta: { ...msg.meta, status: 'sent' } }
+                        : msg
+                    )
+                  }));
                   return { ...old, pages: newPages };
                 }
               );
@@ -329,10 +350,38 @@ export function useAICopilot(options: UseAICopilotOptions = {}): UseAICopilotRet
             try {
               const parsed = JSON.parse(data);
 
-              if (parsed.type === 'meta') {
+              // Handle different event types from server
+              if (parsed.messageId) {
+                // Meta event - create initial assistant message
                 assistantMessageId = parsed.messageId;
-              } else if (parsed.type === 'content') {
-                assistantContent += parsed.content;
+                
+                const initialMessage: AIMessage = {
+                  id: assistantMessageId,
+                  sessionId,
+                  author: 'assistant',
+                  content: '',
+                  createdAt: Date.now(),
+                  meta: { status: 'streaming' }
+                };
+
+                // Add initial assistant message to cache
+                queryClient.setQueryData(
+                  queryKeys.messages(sessionId),
+                  (old: InfiniteData<PaginatedMessages> | undefined) => {
+                    if (!old) return { pages: [{ items: [initialMessage], hasMore: false, total: 1 }] };
+                    const newPages = [...old.pages];
+                    if (newPages.length > 0) {
+                      newPages[0] = {
+                        ...newPages[0],
+                        items: [...newPages[0].items, initialMessage]
+                      };
+                    }
+                    return { ...old, pages: newPages };
+                  }
+                );
+              } else if (parsed.chunk) {
+                // Delta event (content chunk)
+                assistantContent += parsed.chunk;
 
                 // Update streaming message in cache
                 queryClient.setQueryData(
@@ -350,8 +399,9 @@ export function useAICopilot(options: UseAICopilotOptions = {}): UseAICopilotRet
                     return { ...old, pages: newPages };
                   }
                 );
-              } else if (parsed.type === 'error') {
-                throw new Error(parsed.error);
+              } else if (parsed.message) {
+                // Error event
+                throw new Error(parsed.message);
               }
             } catch (parseError) {
               console.warn('Failed to parse SSE data:', parseError);
@@ -404,7 +454,7 @@ export function useAICopilot(options: UseAICopilotOptions = {}): UseAICopilotRet
         if (newPages.length > 0) {
           newPages[0] = {
             ...newPages[0],
-            items: [assistantMessage, ...newPages[0].items]
+            items: [...newPages[0].items, assistantMessage]
           };
         }
         return { ...old, pages: newPages };
@@ -439,12 +489,15 @@ export function useAICopilot(options: UseAICopilotOptions = {}): UseAICopilotRet
     setIsSending(true);
     setError(null);
 
+    // Generate temp message ID once for the entire function
+    const tempMessageId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
     try {
       const idToken = await user.getIdToken();
 
       // Optimistic update - add user message immediately
       const userMessage: AIMessage = {
-        id: `temp_${Date.now()}`,
+        id: tempMessageId,
         sessionId: currentSessionId,
         author: 'user',
         content,
@@ -461,7 +514,7 @@ export function useAICopilot(options: UseAICopilotOptions = {}): UseAICopilotRet
           if (newPages.length > 0) {
             newPages[0] = {
               ...newPages[0],
-              items: [userMessage, ...newPages[0].items]
+              items: [...newPages[0].items, userMessage]
             };
           }
           return { ...old, pages: newPages };
@@ -484,7 +537,7 @@ export function useAICopilot(options: UseAICopilotOptions = {}): UseAICopilotRet
           const newPages = old.pages.map((page: PaginatedMessages) => ({
             ...page,
             items: page.items.map((msg: AIMessage) =>
-              msg.id === `temp_${Date.now()}`
+              msg.id === tempMessageId
                 ? { ...msg, meta: { ...msg.meta, status: 'sent' } }
                 : msg
             )
@@ -505,7 +558,7 @@ export function useAICopilot(options: UseAICopilotOptions = {}): UseAICopilotRet
           const newPages = old.pages.map((page: PaginatedMessages) => ({
             ...page,
             items: page.items.map((msg: AIMessage) =>
-              msg.id === `temp_${Date.now()}`
+              msg.id === tempMessageId
                 ? { ...msg, meta: { ...msg.meta, status: 'failed' } }
                 : msg
             )

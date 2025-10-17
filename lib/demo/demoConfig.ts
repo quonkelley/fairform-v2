@@ -137,8 +137,8 @@ export const demoConfig = {
      * Reset to initial state after session timeout
      */
     autoResetOnTimeout: true,
-    sessionTimeoutMinutes: 30,
   },
+
 
   /**
    * Analytics configuration for demo mode
