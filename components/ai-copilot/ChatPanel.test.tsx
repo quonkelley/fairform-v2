@@ -86,7 +86,7 @@ describe('ChatPanel', () => {
     // Reset fetch mock
     (global.fetch as jest.Mock).mockClear();
     // Reset EventSource mock
-    (global.EventSource as jest.MockedFunction<typeof EventSource>).mockClear();
+    (global.EventSource as unknown as jest.Mock).mockClear();
   });
 
   describe('Rendering', () => {

@@ -66,7 +66,7 @@ function generateMessageId(): string {
  * Story 13.35: Includes multi-language support
  * Enhanced: Includes step-specific guidance capabilities
  */
-function buildSystemPrompt(appStateContext?: string, language: SupportedLanguage = 'en', currentStep?: any): string {
+function buildSystemPrompt(appStateContext?: string, language: SupportedLanguage = 'en', currentStep?: { stepType?: string; name?: string; description?: string; dueDate?: string; estimatedTime?: string }): string {
   const basePrompt = `You are FairForm's AI Copilot, an intelligent assistant helping self-represented litigants navigate their legal cases.
 
 Priority Data Collection (ask for or extract these first):
@@ -331,7 +331,7 @@ export async function POST(request: NextRequest) {
     const { message, sessionId, caseId } = parsedRequest.data;
     
     // Extract current step information from message content if present
-    let currentStep: any = null;
+    let currentStep: { stepType?: string; name?: string; description?: string; dueDate?: string; estimatedTime?: string } | null = null;
     const stepMatch = message.match(/\[Current step: ([^\]]+)\]/);
     if (stepMatch) {
       // For now, we'll create a basic step object from the message
@@ -515,7 +515,7 @@ export async function POST(request: NextRequest) {
         nextQuestion,
         ambiguityCheck,
         detectedLanguage,
-        currentStep
+        currentStep || undefined
       );
     } else {
       // Return JSON response
@@ -530,7 +530,7 @@ export async function POST(request: NextRequest) {
         nextQuestion,
         ambiguityCheck,
         detectedLanguage,
-        currentStep
+        currentStep || undefined
       );
     }
 
@@ -571,7 +571,7 @@ async function handleSSEResponse(
   nextQuestion: { question: string; reason: string; key: string; priority: number } | null,
   ambiguityCheck: { isAmbiguous: boolean; clarifyingQuestion?: string; reason?: string; type?: string },
   language: SupportedLanguage = 'en',
-  currentStep?: any
+  currentStep?: { stepType?: string; name?: string; description?: string; dueDate?: string; estimatedTime?: string }
 ): Promise<Response> {
   const encoder = new TextEncoder();
   
@@ -818,7 +818,7 @@ async function handleJSONResponse(
   nextQuestion: { question: string; reason: string; key: string; priority: number } | null,
   ambiguityCheck: { isAmbiguous: boolean; clarifyingQuestion?: string; reason?: string; type?: string },
   language: SupportedLanguage = 'en',
-  currentStep?: any
+  currentStep?: { stepType?: string; name?: string; description?: string; dueDate?: string; estimatedTime?: string }
 ): Promise<NextResponse> {
   try {
     // Build app state context for AI

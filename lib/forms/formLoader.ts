@@ -243,7 +243,7 @@ async function resolveTemplate(formId: string): Promise<FormTemplate | null> {
         runtimeTemplates.set(formId, templateData);
         return cloneTemplate(templateData);
       }
-    } catch (error) {
+    } catch {
       // Ignore fetch errors and fall through
     }
   }

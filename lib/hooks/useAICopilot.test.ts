@@ -67,7 +67,7 @@ describe('useAICopilot', () => {
     vi.clearAllMocks();
     (global.fetch as jest.Mock).mockClear();
     if (global.EventSource) {
-      (global.EventSource as jest.MockedFunction<typeof EventSource>).mockClear();
+      (global.EventSource as unknown as jest.Mock).mockClear();
     }
     consoleSpy.error.mockClear();
     consoleSpy.warn.mockClear();

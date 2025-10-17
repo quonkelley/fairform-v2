@@ -614,9 +614,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
     }
   };
 
-  const handleDownloadComplete = useCallback((
-    _info?: { downloadUrl: string; fileName: string }
-  ) => {
+  const handleDownloadComplete = useCallback(() => {
     if (!caseId) {
       return;
     }

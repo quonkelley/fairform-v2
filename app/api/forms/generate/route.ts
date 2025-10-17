@@ -16,7 +16,7 @@ import type { FieldValue, Result } from "@/lib/forms/types";
 const GenerateFormRequestSchema = z.object({
   formId: z.string().min(1),
   caseId: z.string().min(1),
-  fields: z.record(z.unknown()).default({}),
+  fields: z.record(z.string(), z.unknown()).default({}),
 });
 
 type GenerateFormRequest = z.infer<typeof GenerateFormRequestSchema>;

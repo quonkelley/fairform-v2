@@ -127,4 +127,3 @@ export async function POST(request: NextRequest) {
 // Configure body size limit for this route (Next.js default is 4MB)
 export const runtime = 'nodejs';
 export const maxDuration = 30; // 30 seconds max
-export const bodyParser = false; // We handle FormData manually

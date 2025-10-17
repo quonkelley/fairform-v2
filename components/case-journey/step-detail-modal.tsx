@@ -21,7 +21,7 @@ export interface StepDetailModalProps {
 }
 
 export function StepDetailModal({ step, totalSteps, isOpen, onClose, onAskAI }: StepDetailModalProps) {
-  const { name, order, dueDate, instructions, estimatedTime, disclaimer, description, stepType } = step;
+  const { name, order, dueDate, estimatedTime, disclaimer, description, stepType } = step;
 
   const handleAskAI = () => {
     if (onAskAI) {

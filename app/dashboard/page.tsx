@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 
 import { useAuth } from "@/components/auth/auth-context";
@@ -8,7 +8,7 @@ import { ProtectedRoute } from "@/components/auth/protected-route";
 import { DashboardContent } from "@/components/dashboard/dashboard-content";
 import { useAICopilotContext } from "@/components/ai-copilot/AICopilotProvider";
 
-export default function DashboardPage() {
+function DashboardContentWithSearchParams() {
   const { user, signOutUser } = useAuth();
   const [signingOut, setSigningOut] = useState(false);
   const searchParams = useSearchParams();
@@ -47,5 +47,13 @@ export default function DashboardPage() {
         signingOut={signingOut}
       />
     </ProtectedRoute>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <DashboardContentWithSearchParams />
+    </Suspense>
   );
 }

@@ -24,8 +24,10 @@ export interface FailureContext {
  */
 export function determineFailureLevel(
   attemptCount: number,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _errorType: 'misunderstanding' | 'out_of_scope' | 'technical_error' = 'misunderstanding'
 ): FailureLevel {
+  // _errorType parameter reserved for future use
   // First attempt: try to clarify
   if (attemptCount === 1) return 'rephrase';
   

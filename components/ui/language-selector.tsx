@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Globe, Check } from 'lucide-react';
+import { Globe } from 'lucide-react';
 import { useLanguage } from '@/lib/hooks/useLanguage';
 import { cn } from '@/lib/utils';
 
@@ -33,10 +33,10 @@ export function LanguageSelector({
             <span>Language:</span>
           </div>
         )}
-        {Object.entries(supportedLanguages).map(([code, name]) => (
+        {Object.entries(supportedLanguages).map(([code]) => (
           <button
             key={code}
-            onClick={() => setLanguage(code as any)}
+            onClick={() => setLanguage(code as keyof typeof supportedLanguages)}
             disabled={isDetecting}
             className={cn(
               'px-3 py-1.5 text-sm rounded-md border transition-colors',
@@ -56,14 +56,15 @@ export function LanguageSelector({
   return (
     <div className={cn('relative', className)}>
       {showLabel && (
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label htmlFor="language-select" className="block text-sm font-medium text-gray-700 mb-1">
           Language
         </label>
       )}
       <div className="relative">
         <select
+          id="language-select"
           value={currentLanguage}
-          onChange={(e) => setLanguage(e.target.value as any)}
+          onChange={(e) => setLanguage(e.target.value as keyof typeof supportedLanguages)}
           disabled={isDetecting}
           className={cn(
             'appearance-none bg-white border border-gray-300 rounded-md px-3 py-2 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent',

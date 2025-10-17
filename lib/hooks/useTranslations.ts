@@ -12,6 +12,7 @@ export function useTranslations(): {
   
   return {
     t: (key: string) => t(key, currentLanguage),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     translations: t('', currentLanguage) as any, // This will return the full translations object
     language: currentLanguage,
   };

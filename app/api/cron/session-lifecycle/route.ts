@@ -7,6 +7,9 @@
  * @see docs/stories/13.12.session-lifecycle-management.md
  */
 
+// Mark as dynamic route to prevent static generation
+export const dynamic = 'force-dynamic';
+
 import { NextRequest, NextResponse } from "next/server";
 import { SessionLifecycleManager } from "@/lib/ai/sessionLifecycle";
 import { LifecycleMonitor } from "@/lib/ai/lifecycleMonitor";

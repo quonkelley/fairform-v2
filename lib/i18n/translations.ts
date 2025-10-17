@@ -585,6 +585,7 @@ export function getTranslations(language: SupportedLanguage): Translations {
 
 export function t(key: string, language: SupportedLanguage): string {
   const keys = key.split('.');
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let value: any = getTranslations(language);
   
   for (const k of keys) {
