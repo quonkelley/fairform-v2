@@ -1,0 +1,44 @@
+{
+  "noticeType": "debt_collection",
+  "caseNumber": "49K01-2510-DC-001234",
+  "court": {
+    "code": "K01",
+    "name": "Center Township Small Claims Court",
+    "county": "Marion County",
+    "state": "IN",
+    "address": "7201 E. 75th Street, Indianapolis, IN 46256",
+    "phone": "(317) 595-5000",
+    "hours": "Monday-Friday 8:00 AM - 4:30 PM"
+  },
+  "noticeDate": "2025-10-10",
+  "hearingDate": "2025-11-15",
+  "plaintiff": {
+    "name": "Midwest Credit Services LLC",
+    "address": "789 Collection Ave, Indianapolis, IN 46202"
+  },
+  "defendant": {
+    "name": "James Wilson",
+    "address": "456 Oak Street, Indianapolis, IN 46205"
+  },
+  "debtAmount": "$2,847.50",
+  "debtType": "Credit card debt",
+  "originalCreditor": "First National Bank",
+  "accountNumber": "****1234",
+  "lastPaymentDate": "2024-08-15",
+  "noticeDescription": "30-day demand letter",
+  "glossaryTerms": ["debt-collection", "default-judgment", "garnishment", "statute-of-limitations", "validation-notice"],
+  "timeline": {
+    "noticeGiven": "2025-10-10",
+    "responseDue": "2025-11-09",
+    "hearingScheduled": "2025-11-15"
+  },
+  "metadata": {
+    "source": "Marion County Civil Data Access Research",
+    "caseType": "debt_collection",
+    "jurisdiction": "Marion County, IN - Center Township Small Claims Court",
+    "filingFee": "$86.00",
+    "serviceFee": "$28.00",
+    "statuteOfLimitations": "6 years (Indiana)",
+    "debtAge": "2 years 2 months"
+  }
+}

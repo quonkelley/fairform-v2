@@ -4,6 +4,7 @@ import OpenAI from "openai";
 import { moderateInput } from "@/lib/ai/moderate";
 import { ChatRequestSchema } from "@/lib/ai/schemas";
 import { requireAuth } from "@/lib/auth/server-auth";
+import { detectLanguage, getLanguageInstructions, type SupportedLanguage } from "@/lib/ai/languageDetection";
 import {
   createSession,
   appendMessage,
@@ -13,13 +14,16 @@ import {
   listMessages,
 } from "@/lib/db/aiSessionsRepo";
 import type { AISession, ConversationStage, MinimumCaseInfo, ContextSnapshot, CaseType } from "@/lib/ai/types";
-import { 
-  extractCaseInfo, 
-  buildAppStateContext, 
+import {
+  extractCaseInfo,
+  buildAppStateContext,
   getNextStage,
   mapToConversationState
 } from "@/lib/ai/conversationStages";
 import { createCaseFromConversation } from "@/lib/ai/caseCreation";
+import { getNextQuestion } from "@/lib/ai/followUpGenerator";
+import { detectAmbiguity } from "@/lib/ai/disambiguationDetector";
+import { getStepKnowledge, generateStepGuidance } from "@/lib/ai/stepKnowledge";
 
 // Environment configuration
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
@@ -58,8 +62,11 @@ function generateMessageId(): string {
 
 /**
  * Build system prompt for AI Copilot
+ * Story 13.29: Includes follow-up question and disambiguation guidelines
+ * Story 13.35: Includes multi-language support
+ * Enhanced: Includes step-specific guidance capabilities
  */
-function buildSystemPrompt(appStateContext?: string): string {
+function buildSystemPrompt(appStateContext?: string, language: SupportedLanguage = 'en', currentStep?: any): string {
   const basePrompt = `You are FairForm's AI Copilot, an intelligent assistant helping self-represented litigants navigate their legal cases.
 
 Priority Data Collection (ask for or extract these first):
@@ -74,6 +81,28 @@ Conversation Flow Rules:
 - When [case_creation_success] appears in context, celebrate the success and provide the case link: "🎉 Great! Your case has been created. [View your case →](/cases/{case_id})"
 - When [case_creation_error] appears in context, acknowledge the issue and suggest alternatives or retry options
 - After case creation, suggest next step: "Generate your plan" or "Fill the Appearance form"
+
+SMART FOLLOW-UP QUESTIONS (Story 13.29):
+- When you notice missing critical information, ask for it naturally in the conversation
+- ALWAYS explain why you're asking: "I need to know [X] because [reason]"
+- Prioritize questions: jurisdiction → case number/hearing date → other case-specific details
+- If the user doesn't know something, acknowledge gracefully: "That's okay, we can add that later"
+- Don't ask the same question twice - check the app_state context below for what's already collected
+- Ask follow-up questions ONE AT A TIME to maintain natural conversation flow
+
+DISAMBIGUATION PROTOCOL (Research-Based, Story 13.29):
+When input is ambiguous or unclear, NEVER guess - always ask a specific clarifying question:
+- User mentions "my case" but has multiple active cases → ask which specific case they mean
+- User says vague date like "soon" or "next week" → ask for the specific date
+- User refers to "them" or "he/she" without context → ask who they mean
+- User mentions vague amounts like "a lot of money" → ask for specific dollar amount
+- User uses "here" or "my county" without specifying → ask for specific city/county name
+- If [disambiguation_needed] appears in context below, incorporate that clarifying question naturally
+
+Examples of good disambiguation:
+- "I found two cases: your eviction case #12345 and small claims case #67890. Which one are you referring to?"
+- "When you say 'next week', could you provide the specific date? For example, 'January 15, 2025'."
+- "Could you specify the city or county where your case is located? For example, 'Marion County, Indiana'."
 
 FORM DETECTION:
 When the user mentions any of these phrases:
@@ -99,6 +128,31 @@ Your role:
 - Explain legal terms in plain language
 - Suggest practical next steps for users' cases
 - Help users understand their rights and options
+- Provide step-specific guidance when users ask about specific case steps
+
+STEP-SPECIFIC GUIDANCE CAPABILITIES:
+When users ask about specific steps (like "Can you help me with [step name]?"), you can provide:
+- General information about what that type of step involves
+- Common court procedures and rules for that step type
+- Practical tips and best practices
+- Answers to frequently asked questions about that step
+- General guidance on what to expect and how to prepare
+
+Available step types you can help with:
+- Form steps (filling out court forms)
+- Document steps (creating or gathering legal documents)
+- Review steps (examining information or documents)
+- Submit steps (filing documents with the court)
+- Wait steps (waiting periods in legal proceedings)
+- Meeting steps (court hearings, mediations, conferences)
+- Communication steps (interacting with parties or the court)
+
+When providing step-specific guidance:
+- Use the step knowledge base to give accurate, helpful information
+- Focus on general court procedures and what users can expect
+- Provide practical tips and common questions/answers
+- Always remind users that specific legal advice should come from an attorney
+- Be encouraging and supportive while being realistic about challenges
 
 Important guidelines:
 - NEVER provide legal advice or tell users what will happen in their case
@@ -106,10 +160,41 @@ Important guidelines:
 - Use empathetic, supportive language at an 8th-grade reading level
 - Focus on procedural guidance and general legal information
 - If asked about specific case outcomes, explain that only an attorney can provide legal advice
+- When helping with steps, provide general guidance but emphasize the importance of following court rules
 
-You are here to empower and educate, not to replace legal counsel.`;
+You are here to empower and educate, not to replace legal counsel.
 
-  return appStateContext ? `${basePrompt}\n\n${appStateContext}` : basePrompt;
+LANGUAGE INSTRUCTION:
+${getLanguageInstructions(language)}`;
+
+  // Add step-specific context if current step is provided
+  let stepContext = '';
+  if (currentStep) {
+    const stepKnowledge = getStepKnowledge(currentStep.stepType || '');
+    if (stepKnowledge) {
+      stepContext = `\n\nCURRENT STEP CONTEXT:
+The user is currently working on: **${currentStep.name}**
+Step Type: ${currentStep.stepType || 'Unknown'}
+${currentStep.description ? `Description: ${currentStep.description}` : ''}
+${currentStep.dueDate ? `Due Date: ${currentStep.dueDate}` : ''}
+${currentStep.estimatedTime ? `Estimated Time: ${currentStep.estimatedTime}` : ''}
+
+STEP-SPECIFIC GUIDANCE:
+${generateStepGuidance(currentStep.stepType || '', currentStep.name)}
+
+When the user asks about this step, provide helpful guidance based on the step knowledge above while maintaining appropriate disclaimers about legal advice.`;
+    } else {
+      stepContext = `\n\nCURRENT STEP CONTEXT:
+The user is currently working on: **${currentStep.name}**
+${currentStep.description ? `Description: ${currentStep.description}` : ''}
+${currentStep.dueDate ? `Due Date: ${currentStep.dueDate}` : ''}
+${currentStep.estimatedTime ? `Estimated Time: ${currentStep.estimatedTime}` : ''}
+
+Provide general guidance about this step while reminding the user that specific legal advice should come from an attorney.`;
+    }
+  }
+
+  return appStateContext ? `${basePrompt}\n\n${appStateContext}${stepContext}` : `${basePrompt}${stepContext}`;
 }
 
 type ChatCompletionStream = AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk>;
@@ -244,6 +329,21 @@ export async function POST(request: NextRequest) {
     }
 
     const { message, sessionId, caseId } = parsedRequest.data;
+    
+    // Extract current step information from message content if present
+    let currentStep: any = null;
+    const stepMatch = message.match(/\[Current step: ([^\]]+)\]/);
+    if (stepMatch) {
+      // For now, we'll create a basic step object from the message
+      // In the future, we could pass more detailed step information
+      currentStep = {
+        name: stepMatch[1],
+        stepType: 'unknown', // Could be enhanced to detect step type
+        description: undefined,
+        dueDate: undefined,
+        estimatedTime: undefined
+      };
+    }
 
     // Authentication
     let user;
@@ -316,12 +416,35 @@ export async function POST(request: NextRequest) {
       conversationStage = 'GREET';
     }
 
-    // Extract case info from current message
-    const extractedInfo = extractCaseInfo(message);
+    // Story 13.35: Detect language from user message
+    const detectedLanguage = await detectLanguage(message);
+    
+    // Extract case info from current message (Story 13.31: now async)
+    const extractedInfo = await extractCaseInfo(message);
     collectedInfo = { ...collectedInfo, ...extractedInfo };
 
     // Determine next conversation stage
     conversationStage = getNextStage(conversationStage, collectedInfo, message);
+
+    // Story 13.29: Track asked questions for duplicate prevention
+    // Extract from session metadata or initialize
+    const askedQuestions = new Set<string>(
+      session.contextSnapshot?.askedQuestions || []
+    );
+
+    // Story 13.29: Get next follow-up question (if needed)
+    const nextQuestion = getNextQuestion(collectedInfo, askedQuestions);
+    if (nextQuestion) {
+      // Mark question as asked for future prevention
+      askedQuestions.add(nextQuestion.key);
+    }
+
+    // Story 13.29: Check for ambiguous input (need to fetch user's active cases for context)
+    // Note: For now, we'll pass empty activeCases array. In future stories, fetch from casesRepo
+    const ambiguityCheck = detectAmbiguity(message, {
+      activeCases: [], // TODO: Fetch user's active cases in future enhancement
+      collectedInfo,
+    });
 
     // Persist conversation stage and collected info to session
     // Note: Filter out undefined values - Firestore requires null instead of undefined
@@ -331,13 +454,14 @@ export async function POST(request: NextRequest) {
     if (collectedInfo.jurisdiction) cleanedCollectedInfo.jurisdiction = collectedInfo.jurisdiction;
     if (collectedInfo.caseNumber) cleanedCollectedInfo.caseNumber = collectedInfo.caseNumber;
     if (collectedInfo.hearingDate) cleanedCollectedInfo.hearingDate = collectedInfo.hearingDate;
-    
+
     const snapshotUpdate: Partial<ContextSnapshot> = {
       ...session.contextSnapshot,
       conversationStage,
       collectedInfo: cleanedCollectedInfo,
+      askedQuestions: Array.from(askedQuestions), // Convert Set to Array for Firestore
     };
-    
+
     // Only set caseType and jurisdiction if they have values (Firestore doesn't accept undefined)
     if (collectedInfo.caseType) {
       snapshotUpdate.caseType = collectedInfo.caseType as CaseType;
@@ -345,7 +469,7 @@ export async function POST(request: NextRequest) {
     if (collectedInfo.jurisdiction) {
       snapshotUpdate.jurisdiction = collectedInfo.jurisdiction;
     }
-    
+
     await updateContextSnapshot(session.id, snapshotUpdate);
 
     // Handle case creation if user confirmed
@@ -380,10 +504,34 @@ export async function POST(request: NextRequest) {
 
     if (supportsSSE) {
       // Stream response via SSE
-      return await handleSSEResponse(session, message, assistantMessageId, startTime, conversationStage, collectedInfo, caseCreationResult);
+      return await handleSSEResponse(
+        session,
+        message,
+        assistantMessageId,
+        startTime,
+        conversationStage,
+        collectedInfo,
+        caseCreationResult,
+        nextQuestion,
+        ambiguityCheck,
+        detectedLanguage,
+        currentStep
+      );
     } else {
       // Return JSON response
-      return await handleJSONResponse(session, message, assistantMessageId, startTime, conversationStage, collectedInfo, caseCreationResult);
+      return await handleJSONResponse(
+        session,
+        message,
+        assistantMessageId,
+        startTime,
+        conversationStage,
+        collectedInfo,
+        caseCreationResult,
+        nextQuestion,
+        ambiguityCheck,
+        detectedLanguage,
+        currentStep
+      );
     }
 
   } catch (error) {
@@ -409,6 +557,8 @@ export async function POST(request: NextRequest) {
 
 /**
  * Handle SSE streaming response
+ * Story 13.29: Added nextQuestion and ambiguityCheck params for smart follow-ups
+ * Story 13.35: Added language support
  */
 async function handleSSEResponse(
   session: AISession,
@@ -417,7 +567,11 @@ async function handleSSEResponse(
   startTime: number,
   conversationStage: ConversationStage,
   collectedInfo: Partial<MinimumCaseInfo>,
-  caseCreationResult: { success: boolean; caseId?: string; error?: { code: string; message: string; retryable: boolean } } | null
+  caseCreationResult: { success: boolean; caseId?: string; error?: { code: string; message: string; retryable: boolean } } | null,
+  nextQuestion: { question: string; reason: string; key: string; priority: number } | null,
+  ambiguityCheck: { isAmbiguous: boolean; clarifyingQuestion?: string; reason?: string; type?: string },
+  language: SupportedLanguage = 'en',
+  currentStep?: any
 ): Promise<Response> {
   const encoder = new TextEncoder();
   
@@ -438,7 +592,17 @@ async function handleSSEResponse(
 
         // Build app state context for AI
         let appStateContext = buildAppStateContext(conversationStage, collectedInfo);
-        
+
+        // Story 13.29: Add follow-up question context
+        if (nextQuestion) {
+          appStateContext += `\n[follow_up_question_needed]\nquestion="${nextQuestion.question}"\nreason="${nextQuestion.reason}"\npriority=${nextQuestion.priority}\n`;
+        }
+
+        // Story 13.29: Add disambiguation context
+        if (ambiguityCheck.isAmbiguous) {
+          appStateContext += `\n[disambiguation_needed]\ntype="${ambiguityCheck.type}"\nquestion="${ambiguityCheck.clarifyingQuestion}"\nreason="${ambiguityCheck.reason}"\n`;
+        }
+
         // Add case creation context if applicable
         if (caseCreationResult) {
           if (caseCreationResult.success && caseCreationResult.caseId) {
@@ -450,7 +614,7 @@ async function handleSSEResponse(
         
         // Build messages array for OpenAI with conversation history
         const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
-          { role: "system", content: buildSystemPrompt(appStateContext) },
+          { role: "system", content: buildSystemPrompt(appStateContext, language, currentStep) },
         ];
 
         // Add conversation history (last 10 messages) - BEFORE storing the new user message
@@ -640,6 +804,8 @@ function estimateTokens(text: string): number {
 
 /**
  * Handle JSON fallback response
+ * Story 13.29: Added nextQuestion and ambiguityCheck params for smart follow-ups
+ * Story 13.35: Added language support
  */
 async function handleJSONResponse(
   session: AISession,
@@ -648,12 +814,26 @@ async function handleJSONResponse(
   startTime: number,
   conversationStage: ConversationStage,
   collectedInfo: Partial<MinimumCaseInfo>,
-  caseCreationResult: { success: boolean; caseId?: string; error?: { code: string; message: string; retryable: boolean } } | null
+  caseCreationResult: { success: boolean; caseId?: string; error?: { code: string; message: string; retryable: boolean } } | null,
+  nextQuestion: { question: string; reason: string; key: string; priority: number } | null,
+  ambiguityCheck: { isAmbiguous: boolean; clarifyingQuestion?: string; reason?: string; type?: string },
+  language: SupportedLanguage = 'en',
+  currentStep?: any
 ): Promise<NextResponse> {
   try {
     // Build app state context for AI
     let appStateContext = buildAppStateContext(conversationStage, collectedInfo);
-    
+
+    // Story 13.29: Add follow-up question context
+    if (nextQuestion) {
+      appStateContext += `\n[follow_up_question_needed]\nquestion="${nextQuestion.question}"\nreason="${nextQuestion.reason}"\npriority=${nextQuestion.priority}\n`;
+    }
+
+    // Story 13.29: Add disambiguation context
+    if (ambiguityCheck.isAmbiguous) {
+      appStateContext += `\n[disambiguation_needed]\ntype="${ambiguityCheck.type}"\nquestion="${ambiguityCheck.clarifyingQuestion}"\nreason="${ambiguityCheck.reason}"\n`;
+    }
+
     // Add case creation context if applicable
     if (caseCreationResult) {
       if (caseCreationResult.success && caseCreationResult.caseId) {
@@ -665,7 +845,7 @@ async function handleJSONResponse(
     
     // Build messages array for OpenAI with conversation history
     const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
-      { role: "system", content: buildSystemPrompt(appStateContext) },
+      { role: "system", content: buildSystemPrompt(appStateContext, language, currentStep) },
     ];
 
     // Add conversation history (last 10 messages) - BEFORE storing the new user message

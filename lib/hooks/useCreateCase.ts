@@ -13,6 +13,7 @@ export type CreateCaseFormInput = Omit<CreateCaseInput, "userId">;
 
 export function useCreateCase(
   userId: string | null | undefined,
+  onSuccess?: (caseRecord: CaseRecord) => void
 ): UseMutationResult<CaseRecord, Error, CreateCaseFormInput> {
   const queryClient = useQueryClient();
   const { user } = useAuth();
@@ -66,8 +67,9 @@ export function useCreateCase(
         updatedAt: new Date(),
       } as CaseRecord;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["cases", userId] });
+      onSuccess?.(data);
     },
   });
 }

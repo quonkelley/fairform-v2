@@ -1,22 +1,28 @@
 import type { ConversationStage, MinimumCaseInfo } from './types';
+import { extractCaseInfoWithFallback } from './structuredExtraction';
+import { translateText, normalizeForDatabase } from './translation';
+
+// Feature flag for structured extraction rollout
+const USE_STRUCTURED_EXTRACTION =
+  process.env.USE_STRUCTURED_EXTRACTION !== 'false';
 
 /**
  * Check if minimum case information is available for case creation
  */
 export function hasMinimumInfo(info: MinimumCaseInfo): boolean {
   return !!(
-    info.caseType && 
-    info.jurisdiction && 
+    info.caseType &&
+    info.jurisdiction &&
     (info.caseNumber || info.hearingDate)
   );
 }
 
 /**
- * Extract case information from user message
- * This is a simple implementation - in production you might want to use
- * more sophisticated NLP or structured data extraction
+ * Extract case information from user message using regex patterns
+ * This is the fallback implementation for backward compatibility
+ * @deprecated Use extractCaseInfoAI from structuredExtraction.ts instead (Story 13.31)
  */
-export function extractCaseInfo(message: string): Partial<MinimumCaseInfo> {
+export function extractCaseInfoRegex(message: string): Partial<MinimumCaseInfo> {
   const lowerMessage = message.toLowerCase();
   const info: Partial<MinimumCaseInfo> = {};
 
@@ -49,7 +55,7 @@ export function extractCaseInfo(message: string): Partial<MinimumCaseInfo> {
     /marion\s+county/i,
     /indiana/i,
   ];
-  
+
   for (const pattern of jurisdictionPatterns) {
     const match = message.match(pattern);
     if (match) {
@@ -64,7 +70,7 @@ export function extractCaseInfo(message: string): Partial<MinimumCaseInfo> {
     /case\s*(number|#)?\s*([A-Z0-9-]+)/i,
     /([A-Z0-9-]{6,})/i, // General pattern for case-like numbers
   ];
-  
+
   for (const pattern of caseNumberPatterns) {
     const match = message.match(pattern);
     if (match) {
@@ -83,7 +89,7 @@ export function extractCaseInfo(message: string): Partial<MinimumCaseInfo> {
     /([a-z]+\s+\d{1,2},?\s+\d{4})/i, // "January 15, 2024"
     /(\d{1,2}\/\d{1,2}\/\d{2,4})/i, // "1/15/2024"
   ];
-  
+
   for (const pattern of datePatterns) {
     const match = message.match(pattern);
     if (match) {
@@ -96,6 +102,68 @@ export function extractCaseInfo(message: string): Partial<MinimumCaseInfo> {
   }
 
   return info;
+}
+
+/**
+ * Extract case information from user message
+ * Story 13.31: Uses AI-based structured extraction with regex fallback
+ * Story 13.35: Added multi-language support
+ *
+ * @param message - User message containing potential case information
+ * @returns Partial case information extracted from message
+ */
+export async function extractCaseInfo(
+  message: string
+): Promise<Partial<MinimumCaseInfo>> {
+  // First, translate the message to English for consistent extraction
+  let englishMessage = message;
+  try {
+    // Only translate if the message contains non-ASCII characters (likely non-English)
+    if (/[^\x00-\x7F]/.test(message)) {
+      englishMessage = await translateText(message, 'en');
+    }
+  } catch (error) {
+    console.error('Translation failed, using original message:', error);
+    // Continue with original message if translation fails
+  }
+
+  // Use structured extraction if feature flag is enabled
+  if (USE_STRUCTURED_EXTRACTION) {
+    try {
+      const result = await extractCaseInfoWithFallback(
+        englishMessage,
+        extractCaseInfoRegex
+      );
+      
+      // Normalize extracted information for database storage
+      const normalizedInfo: Partial<MinimumCaseInfo> = {};
+      
+      if (result.info.caseType) {
+        normalizedInfo.caseType = result.info.caseType;
+      }
+      
+      if (result.info.jurisdiction) {
+        normalizedInfo.jurisdiction = await normalizeForDatabase(result.info.jurisdiction, 'text');
+      }
+      
+      if (result.info.caseNumber) {
+        normalizedInfo.caseNumber = await normalizeForDatabase(result.info.caseNumber, 'text');
+      }
+      
+      if (result.info.hearingDate) {
+        normalizedInfo.hearingDate = await normalizeForDatabase(result.info.hearingDate, 'date');
+      }
+      
+      return normalizedInfo;
+    } catch (error) {
+      console.error('Structured extraction failed, falling back to regex:', error);
+      // Fallback to regex if AI extraction fails completely
+      return extractCaseInfoRegex(englishMessage);
+    }
+  }
+
+  // Use legacy regex extraction if feature flag is disabled
+  return extractCaseInfoRegex(englishMessage);
 }
 
 /**
@@ -147,7 +215,47 @@ export function getNextStage(
   // If user confirms case creation, advance to post-creation coaching
   if (currentStage === 'CONFIRM_CREATE') {
     const lowerMessage = userMessage.toLowerCase();
-    if (lowerMessage.includes('yes') || lowerMessage.includes('create') || lowerMessage.includes('continue') || lowerMessage.includes('proceed')) {
+
+    // Expanded confirmation detection to handle more natural language patterns
+    const confirmationPatterns = [
+      'yes',
+      'yeah',
+      'yep',
+      'sure',
+      'ok',
+      'okay',
+      'alright',
+      'create',
+      'continue',
+      'proceed',
+      'go ahead',
+      'let\'s do it',
+      'sounds good',
+      'that works',
+      'perfect',
+      'great',
+      'ready',
+      'i\'m ready',
+      'please create',
+      'create it',
+      'create my case',
+      'start',
+      'begin'
+    ];
+
+    // Check if message contains any confirmation pattern
+    const hasConfirmation = confirmationPatterns.some(pattern =>
+      lowerMessage.includes(pattern)
+    );
+
+    // Also check for negative responses to stay in CONFIRM_CREATE
+    const negativePatterns = ['no', 'not yet', 'wait', 'don\'t', 'cancel', 'stop'];
+    const hasNegation = negativePatterns.some(pattern =>
+      lowerMessage.includes(pattern)
+    );
+
+    // Only advance if confirmed and not negated
+    if (hasConfirmation && !hasNegation) {
       return 'POST_CREATE_COACH';
     }
   }

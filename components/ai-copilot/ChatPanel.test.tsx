@@ -21,6 +21,9 @@ vi.mock('lucide-react', () => ({
   User: () => <div data-testid="user-icon" />,
   Clock: () => <div data-testid="clock-icon" />,
   AlertCircle: () => <div data-testid="alert-circle-icon" />,
+  CheckCircle2: () => <div data-testid="check-circle-icon" />,
+  Circle: () => <div data-testid="circle-icon" />,
+  ArrowRight: () => <div data-testid="arrow-right-icon" />,
 }));
 
 // Mock utils
@@ -501,17 +504,138 @@ describe('ChatPanel', () => {
   describe('Message Status', () => {
     it('shows failed status for failed messages', async () => {
       const user = userEvent.setup();
-      
+
       render(<ChatPanel {...defaultProps} />);
-      
+
       const input = screen.getByPlaceholderText(/Type your message.../);
       await user.type(input, 'Hello, AI!');
       await user.keyboard('{Enter}');
-      
+
       // Wait for the message to be sent and potentially fail
       await waitFor(() => {
         const message = screen.getByText('Hello, AI!');
         expect(message).toBeInTheDocument();
+      });
+    });
+  });
+
+  describe('Progress Indicator Integration', () => {
+    it('shows progress indicator during GREET stage', () => {
+      // Mock useAICopilot to return GREET stage
+      vi.doMock('@/lib/hooks/useAICopilot', () => ({
+        useAICopilot: () => ({
+          sessionId: 'test-session-id',
+          messages: [],
+          sendMessage: vi.fn().mockResolvedValue(undefined),
+          isSending: false,
+          connectionStatus: 'connected',
+          error: null,
+          isLoading: false,
+          conversationStage: 'GREET' as const,
+          collectedInfo: {},
+        }),
+      }));
+
+      render(<ChatPanel {...defaultProps} />);
+
+      expect(screen.getByRole('status', { name: /case information/i })).toBeInTheDocument();
+      expect(screen.getByText('Case Information')).toBeInTheDocument();
+      expect(screen.getByText('0/3')).toBeInTheDocument();
+    });
+
+    it('shows progress indicator during GATHER_MIN stage', () => {
+      // Mock useAICopilot to return GATHER_MIN stage
+      vi.doMock('@/lib/hooks/useAICopilot', () => ({
+        useAICopilot: () => ({
+          sessionId: 'test-session-id',
+          messages: [],
+          sendMessage: vi.fn().mockResolvedValue(undefined),
+          isSending: false,
+          connectionStatus: 'connected',
+          error: null,
+          isLoading: false,
+          conversationStage: 'GATHER_MIN' as const,
+          collectedInfo: {
+            caseType: 'eviction',
+          },
+        }),
+      }));
+
+      render(<ChatPanel {...defaultProps} />);
+
+      expect(screen.getByRole('status', { name: /case information/i })).toBeInTheDocument();
+      expect(screen.getByText('1/3')).toBeInTheDocument();
+    });
+
+    it('does not show progress indicator during CONFIRM_CREATE stage', () => {
+      // Mock useAICopilot to return CONFIRM_CREATE stage
+      vi.doMock('@/lib/hooks/useAICopilot', () => ({
+        useAICopilot: () => ({
+          sessionId: 'test-session-id',
+          messages: [],
+          sendMessage: vi.fn().mockResolvedValue(undefined),
+          isSending: false,
+          connectionStatus: 'connected',
+          error: null,
+          isLoading: false,
+          conversationStage: 'CONFIRM_CREATE' as const,
+          collectedInfo: {
+            caseType: 'eviction',
+            jurisdiction: 'Marion County',
+            caseNumber: 'ABC-123',
+          },
+        }),
+      }));
+
+      render(<ChatPanel {...defaultProps} />);
+
+      expect(screen.queryByRole('status', { name: /case information/i })).not.toBeInTheDocument();
+    });
+
+    it('updates progress indicator as information is collected', async () => {
+      // This test would require remounting with different hook values
+      // which is better suited for E2E tests, but we can test the rendering logic
+
+      // Start with no info
+      vi.doMock('@/lib/hooks/useAICopilot', () => ({
+        useAICopilot: () => ({
+          sessionId: 'test-session-id',
+          messages: [],
+          sendMessage: vi.fn().mockResolvedValue(undefined),
+          isSending: false,
+          connectionStatus: 'connected',
+          error: null,
+          isLoading: false,
+          conversationStage: 'GATHER_MIN' as const,
+          collectedInfo: {},
+        }),
+      }));
+
+      const { rerender } = render(<ChatPanel {...defaultProps} />);
+
+      expect(screen.getByText('0/3')).toBeInTheDocument();
+
+      // Update to have case type collected
+      vi.doMock('@/lib/hooks/useAICopilot', () => ({
+        useAICopilot: () => ({
+          sessionId: 'test-session-id',
+          messages: [],
+          sendMessage: vi.fn().mockResolvedValue(undefined),
+          isSending: false,
+          connectionStatus: 'connected',
+          error: null,
+          isLoading: false,
+          conversationStage: 'GATHER_MIN' as const,
+          collectedInfo: {
+            caseType: 'eviction',
+          },
+        }),
+      }));
+
+      rerender(<ChatPanel {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(screen.getByText('1/3')).toBeInTheDocument();
       });
     });
   });

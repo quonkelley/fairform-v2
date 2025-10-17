@@ -9,11 +9,13 @@ import {
   type InfiniteData
 } from '@tanstack/react-query';
 import { useAuth } from '@/components/auth/auth-context';
-import type { 
-  AISession, 
-  AIMessage, 
+import type {
+  AISession,
+  AIMessage,
   AIPromptContext,
-  UserPreferences 
+  UserPreferences,
+  ConversationStage,
+  MinimumCaseInfo
 } from '@/lib/ai/types';
 import { 
   type PaginatedMessages 
@@ -52,26 +54,26 @@ export interface UseAICopilotReturn {
   sessionId: string | null;
   createSession: (options?: CreateSessionOptions) => Promise<string>;
   switchSession: (sessionId: string) => Promise<void>;
-  
+
   // Message management
   messages: AIMessage[];
   unreadCount: number;
   hasMoreMessages: boolean;
   loadMoreMessages: () => Promise<void>;
   markAsRead: () => void;
-  
+
   // Message sending
   sendMessage: (content: string) => Promise<void>;
   isSending: boolean;
-  
+
   // Connection status
   connectionStatus: ConnectionStatus;
   reconnect: () => Promise<void>;
-  
+
   // Context awareness
   context: AIPromptContext | null;
   updateContext: (context: Partial<AIPromptContext>) => void;
-  
+
   // Error handling
   error: Error | null;
   clearError: () => void;
@@ -80,6 +82,10 @@ export interface UseAICopilotReturn {
   isLoading: boolean;
   isCreatingSession: boolean;
   isLoadingMessages: boolean;
+
+  // Conversation state (for progress tracking)
+  conversationStage?: ConversationStage;
+  collectedInfo?: Partial<MinimumCaseInfo>;
 }
 
 /**
@@ -620,26 +626,26 @@ export function useAICopilot(options: UseAICopilotOptions = {}): UseAICopilotRet
     sessionId: currentSessionId,
     createSession: (options?: CreateSessionOptions) => createSessionMutation.mutateAsync(options || {}),
     switchSession,
-    
+
     // Message management
     messages,
     unreadCount,
     hasMoreMessages: messagesQuery.hasNextPage || false,
     loadMoreMessages,
     markAsRead,
-    
+
     // Message sending
     sendMessage,
     isSending,
-    
+
     // Connection status
     connectionStatus,
     reconnect,
-    
+
     // Context awareness
     context,
     updateContext,
-    
+
     // Error handling
     error,
     clearError,
@@ -648,5 +654,9 @@ export function useAICopilot(options: UseAICopilotOptions = {}): UseAICopilotRet
     isLoading: sessionQuery.isLoading || messagesQuery.isLoading,
     isCreatingSession: createSessionMutation.isPending,
     isLoadingMessages: messagesQuery.isFetching,
+
+    // Conversation state (for progress tracking)
+    conversationStage: sessionQuery.data?.contextSnapshot?.conversationStage,
+    collectedInfo: sessionQuery.data?.contextSnapshot?.collectedInfo,
   };
 }

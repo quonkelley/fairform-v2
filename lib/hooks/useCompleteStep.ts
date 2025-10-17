@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/components/auth/auth-context";
 
 import type { CaseStep } from "@/lib/validation";
 
@@ -14,12 +15,21 @@ interface CompleteStepResponse {
 
 export function useCompleteStep() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   return useMutation<CompleteStepResponse, Error, CompleteStepVariables, { previousSteps?: CaseStep[] }>({
     mutationFn: async ({ stepId }: CompleteStepVariables) => {
+      if (!user) {
+        throw new Error("You must be signed in to complete steps");
+      }
+
+      const idToken = await user.getIdToken();
       const response = await fetch(`/api/steps/${stepId}/complete`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${idToken}`,
+        },
         body: JSON.stringify({ isComplete: true }),
       });
 
@@ -67,6 +77,8 @@ export function useCompleteStep() {
     // Refetch on success to ensure data consistency
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["caseSteps", variables.caseId] });
+      // Invalidate case details to update progress
+      queryClient.invalidateQueries({ queryKey: ["case", variables.caseId] });
       // Invalidate cases query to update dashboard progress
       queryClient.invalidateQueries({ queryKey: ["cases"] });
     },

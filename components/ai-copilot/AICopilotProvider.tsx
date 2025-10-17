@@ -24,9 +24,10 @@ export function useAICopilotContext() {
 interface AICopilotProviderProps {
   children: React.ReactNode;
   caseId?: string;
+  hideWidget?: boolean; // Hide the floating chat button
 }
 
-export function AICopilotProvider({ children, caseId }: AICopilotProviderProps) {
+export function AICopilotProvider({ children, caseId, hideWidget = false }: AICopilotProviderProps) {
   const [isOpen, setIsOpen] = useState(false);
   
   // Initialize AI Copilot hook
@@ -76,21 +77,25 @@ export function AICopilotProvider({ children, caseId }: AICopilotProviderProps) 
   return (
     <AICopilotContext.Provider value={contextValue}>
       {children}
-      
-      {/* AI Copilot UI Components */}
-      <ChatWidget
-        isOpen={isOpen}
-        onToggle={toggleChat}
-        unreadCount={unreadCount}
-        connectionStatus={connectionStatus}
-      />
-      
-      <ChatPanel
-        isOpen={isOpen}
-        onClose={closeChat}
-        sessionId={sessionId || undefined}
-        caseId={caseId}
-      />
+
+      {/* AI Copilot UI Components - only show if not hidden */}
+      {!hideWidget && (
+        <>
+          <ChatWidget
+            isOpen={isOpen}
+            onToggle={toggleChat}
+            unreadCount={unreadCount}
+            connectionStatus={connectionStatus}
+          />
+
+          <ChatPanel
+            isOpen={isOpen}
+            onClose={closeChat}
+            sessionId={sessionId || undefined}
+            caseId={caseId}
+          />
+        </>
+      )}
     </AICopilotContext.Provider>
   );
 }

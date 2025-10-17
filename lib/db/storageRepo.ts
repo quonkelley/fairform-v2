@@ -24,7 +24,20 @@ export async function uploadFile(path: string, file: File | Blob): Promise<strin
     const storage = getFirebaseStorage();
     const storageRef = ref(storage, path);
 
-    const snapshot = await uploadBytes(storageRef, file);
+    const uploadSource =
+      typeof Blob !== "undefined" && file instanceof Blob
+        ? new Uint8Array(await file.arrayBuffer())
+        : file;
+
+    const metadata =
+      typeof File !== "undefined" && file instanceof File
+        ? {
+            contentType: file.type,
+            customMetadata: { fileName: file.name },
+          }
+        : undefined;
+
+    const snapshot = await uploadBytes(storageRef, uploadSource, metadata);
     const downloadUrl = await getDownloadURL(snapshot.ref);
 
     return downloadUrl;

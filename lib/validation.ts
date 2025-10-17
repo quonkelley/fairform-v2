@@ -69,11 +69,26 @@ export type CaseStatus = z.infer<typeof CaseStatusSchema>;
 export type CaseType = z.infer<typeof CaseTypeSchema>;
 
 // Case Step schemas
+export const StepTypeSchema = z.enum([
+  "form",
+  "document",
+  "review",
+  "submit",
+  "wait",
+  "meeting",
+  "communication",
+]);
+
 export const CreateCaseStepSchema = z.object({
   caseId: z.string(),
   name: z.string().min(1),
   order: z.number().int().min(0),
   dueDate: z.date().nullable().optional(),
+  description: z.string().optional(),
+  stepType: StepTypeSchema.optional(),
+  instructions: z.array(z.string()).optional(),
+  estimatedTime: z.number().optional(),
+  disclaimer: z.string().optional(),
 });
 
 export const CaseStepSchema = z.object({
@@ -84,12 +99,19 @@ export const CaseStepSchema = z.object({
   dueDate: z.date().nullable(),
   isComplete: z.boolean(),
   completedAt: z.date().nullable(),
+  // Journey template fields
+  description: z.string().optional(),
+  stepType: StepTypeSchema.optional(),
+  instructions: z.array(z.string()).optional(),
+  estimatedTime: z.number().optional(),
+  disclaimer: z.string().optional(),
 });
 
 export const UpdateStepCompletionSchema = z.object({
   isComplete: z.boolean(),
 });
 
+export type StepType = z.infer<typeof StepTypeSchema>;
 export type CaseStep = z.infer<typeof CaseStepSchema>;
 export type CreateCaseStepInput = z.infer<typeof CreateCaseStepSchema>;
 export type UpdateStepCompletionInput = z.infer<typeof UpdateStepCompletionSchema>;

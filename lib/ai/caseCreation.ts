@@ -54,7 +54,7 @@ export function mapConversationToCase(
   return {
     userId,
     title,
-    caseType: state.caseType || 'other',
+    caseType: state.caseType || 'small_claims',
     jurisdiction,
     notes
   };

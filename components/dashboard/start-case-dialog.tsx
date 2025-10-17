@@ -33,6 +33,8 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useCreateCase } from "@/lib/hooks/useCreateCase";
+import { useCelebration } from "@/lib/hooks/useCelebration";
+import { CelebrationModal } from "@/components/celebration/CelebrationModal";
 
 const schema = z.object({
   title: z
@@ -87,7 +89,14 @@ export function StartCaseDialog({
   onSuccess,
 }: StartCaseDialogProps) {
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const createCase = useCreateCase(userId);
+  const celebration = useCelebration();
+  
+  const createCase = useCreateCase(userId, (caseRecord) => {
+    // Show celebration modal on successful case creation
+    if (userId && caseRecord.title) {
+      celebration.showCelebration(caseRecord.id, caseRecord.title, userId);
+    }
+  });
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -122,8 +131,9 @@ export function StartCaseDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent>
+    <>
+      <Dialog open={open} onOpenChange={handleOpenChange}>
+        <DialogContent>
         <DialogHeader>
           <DialogTitle>Create case manually</DialogTitle>
           <DialogDescription>
@@ -259,5 +269,15 @@ export function StartCaseDialog({
         </Form>
       </DialogContent>
     </Dialog>
+    
+    {/* Celebration Modal */}
+    <CelebrationModal
+      caseId={celebration.caseId || ''}
+      caseTitle={celebration.caseTitle || ''}
+      nextSteps={celebration.nextSteps}
+      onClose={celebration.hideCelebration}
+      isOpen={celebration.isOpen}
+    />
+    </>
   );
 }

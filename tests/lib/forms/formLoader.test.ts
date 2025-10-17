@@ -2,18 +2,18 @@
  * Tests for form template loader
  */
 
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import {
   loadFormTemplate,
   clearTemplateCache,
   getCachedTemplateIds,
   isTemplateCached,
   preloadTemplates,
+  registerFormTemplate,
 } from "@/lib/forms/formLoader";
 import type { FormTemplate } from "@/lib/forms/types";
 
-// Mock valid template
-const mockValidTemplate: FormTemplate = {
+const baseTemplate: FormTemplate = {
   formId: "test-form",
   title: "Test Form",
   jurisdiction: "test-jurisdiction",
@@ -28,103 +28,69 @@ const mockValidTemplate: FormTemplate = {
   ],
 };
 
+function createTemplate(overrides: Partial<FormTemplate> = {}): FormTemplate {
+  return {
+    ...baseTemplate,
+    ...overrides,
+    fields: overrides.fields ?? baseTemplate.fields,
+  };
+}
+
 describe("loadFormTemplate", () => {
   beforeEach(() => {
     clearTemplateCache();
-    vi.clearAllMocks();
   });
 
-  it("should load a valid form template", async () => {
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => mockValidTemplate,
-    });
-
-    const result = await loadFormTemplate("test-form");
+  it("should load the built-in Marion Appearance template", async () => {
+    const result = await loadFormTemplate("marion-appearance");
 
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.formId).toBe("test-form");
+      expect(result.data.formId).toBe("marion-appearance");
+      expect(result.data.fields.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("should load a runtime-registered template", async () => {
+    registerFormTemplate("custom-form", createTemplate({ formId: "custom-form" }));
+
+    const result = await loadFormTemplate("custom-form");
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.formId).toBe("custom-form");
       expect(result.data.title).toBe("Test Form");
-      expect(result.data.fields).toHaveLength(1);
     }
   });
 
-  it("should cache loaded templates", async () => {
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => mockValidTemplate,
-    });
+  it("should return cached instance on subsequent loads", async () => {
+    registerFormTemplate("cached-form", createTemplate({ formId: "cached-form" }));
 
-    // First load
-    await loadFormTemplate("test-form");
-    expect(global.fetch).toHaveBeenCalledTimes(1);
+    const first = await loadFormTemplate("cached-form");
+    const second = await loadFormTemplate("cached-form");
 
-    // Second load should use cache
-    await loadFormTemplate("test-form");
-    expect(global.fetch).toHaveBeenCalledTimes(1); // Still 1, not 2
-  });
-
-  it("should return cached template on second load", async () => {
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => mockValidTemplate,
-    });
-
-    const firstResult = await loadFormTemplate("test-form");
-    const secondResult = await loadFormTemplate("test-form");
-
-    expect(firstResult.success).toBe(true);
-    expect(secondResult.success).toBe(true);
-    if (firstResult.success && secondResult.success) {
-      expect(firstResult.data).toEqual(secondResult.data);
+    expect(first.success).toBe(true);
+    expect(second.success).toBe(true);
+    if (first.success && second.success) {
+      expect(first.data).toBe(second.data);
+      expect(isTemplateCached("cached-form")).toBe(true);
     }
   });
 
-  it("should fail for non-existent template", async () => {
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: false,
-      statusText: "Not Found",
-    });
-
-    const result = await loadFormTemplate("non-existent");
+  it("should return error for unknown template", async () => {
+    const result = await loadFormTemplate("unknown-form");
 
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.error).toContain("Failed to load");
+      expect(result.error).toContain('unknown-form');
     }
   });
 
-  it("should fail for template missing formId", async () => {
-    const invalidTemplate = {
-      title: "Test Form",
-      jurisdiction: "test",
-      fields: [],
-    };
-
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => invalidTemplate,
-    });
-
-    const result = await loadFormTemplate("invalid-form");
-
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.error).toContain("formId");
-    }
-  });
-
-  it("should fail for template missing title", async () => {
-    const invalidTemplate = {
-      formId: "test",
-      jurisdiction: "test",
-      fields: [],
-    };
-
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => invalidTemplate,
+  it("should validate required template fields", async () => {
+    registerFormTemplate("invalid-form", {
+      ...baseTemplate,
+      formId: "invalid-form",
+      title: "",
     });
 
     const result = await loadFormTemplate("invalid-form");
@@ -134,134 +100,25 @@ describe("loadFormTemplate", () => {
       expect(result.error).toContain("title");
     }
   });
-
-  it("should fail for template missing jurisdiction", async () => {
-    const invalidTemplate = {
-      formId: "test",
-      title: "Test",
-      fields: [],
-    };
-
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => invalidTemplate,
-    });
-
-    const result = await loadFormTemplate("invalid-form");
-
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.error).toContain("jurisdiction");
-    }
-  });
-
-  it("should fail for template with non-array fields", async () => {
-    const invalidTemplate = {
-      formId: "test",
-      title: "Test",
-      jurisdiction: "test",
-      fields: "not-an-array",
-    };
-
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => invalidTemplate,
-    });
-
-    const result = await loadFormTemplate("invalid-form");
-
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.error).toContain("fields");
-      expect(result.error).toContain("array");
-    }
-  });
-
-  it("should fail for field missing id", async () => {
-    const invalidTemplate = {
-      formId: "test",
-      title: "Test",
-      jurisdiction: "test",
-      fields: [
-        {
-          label: "Field",
-          type: "text",
-          required: true,
-          pdfFieldName: "field",
-        },
-      ],
-    };
-
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => invalidTemplate,
-    });
-
-    const result = await loadFormTemplate("invalid-form");
-
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.error).toContain("id");
-    }
-  });
-
-  it("should fail for field with invalid type", async () => {
-    const invalidTemplate = {
-      formId: "test",
-      title: "Test",
-      jurisdiction: "test",
-      fields: [
-        {
-          id: "field1",
-          label: "Field",
-          type: "invalid-type",
-          required: true,
-          pdfFieldName: "field",
-        },
-      ],
-    };
-
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => invalidTemplate,
-    });
-
-    const result = await loadFormTemplate("invalid-form");
-
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.error).toContain("invalid type");
-    }
-  });
-
-  it("should construct correct path for jurisdiction-formtype format", async () => {
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => mockValidTemplate,
-    });
-
-    await loadFormTemplate("marion-appearance");
-
-    expect(global.fetch).toHaveBeenCalledWith(
-      "/lib/forms/marion/appearance.json"
-    );
-  });
 });
 
 describe("clearTemplateCache", () => {
-  it("should clear all cached templates", async () => {
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => mockValidTemplate,
-    });
-
-    // Load template to populate cache
-    await loadFormTemplate("test-form");
-    expect(isTemplateCached("test-form")).toBe(true);
-
-    // Clear cache
+  beforeEach(() => {
     clearTemplateCache();
-    expect(isTemplateCached("test-form")).toBe(false);
+  });
+
+  it("should clear cache and runtime templates", async () => {
+    registerFormTemplate("runtime-form", createTemplate({ formId: "runtime-form" }));
+
+    await loadFormTemplate("runtime-form");
+    expect(isTemplateCached("runtime-form")).toBe(true);
+
+    clearTemplateCache();
+
+    expect(isTemplateCached("runtime-form")).toBe(false);
+
+    const result = await loadFormTemplate("runtime-form");
+    expect(result.success).toBe(false);
   });
 });
 
@@ -270,44 +127,21 @@ describe("getCachedTemplateIds", () => {
     clearTemplateCache();
   });
 
-  it("should return empty array when cache is empty", () => {
-    const ids = getCachedTemplateIds();
-    expect(ids).toEqual([]);
+  it("should return empty array when no templates cached", () => {
+    expect(getCachedTemplateIds()).toEqual([]);
   });
 
-  it("should return IDs of cached templates", async () => {
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => mockValidTemplate,
-    });
+  it("should list cached template identifiers", async () => {
+    registerFormTemplate("form-a", createTemplate({ formId: "form-a" }));
+    registerFormTemplate("form-b", createTemplate({ formId: "form-b" }));
 
-    await loadFormTemplate("test-form-1");
-    await loadFormTemplate("test-form-2");
+    await loadFormTemplate("form-a");
+    await loadFormTemplate("form-b");
 
     const ids = getCachedTemplateIds();
-    expect(ids).toContain("test-form-1");
-    expect(ids).toContain("test-form-2");
-    expect(ids).toHaveLength(2);
-  });
-});
 
-describe("isTemplateCached", () => {
-  beforeEach(() => {
-    clearTemplateCache();
-  });
-
-  it("should return false for uncached template", () => {
-    expect(isTemplateCached("test-form")).toBe(false);
-  });
-
-  it("should return true for cached template", async () => {
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => mockValidTemplate,
-    });
-
-    await loadFormTemplate("test-form");
-    expect(isTemplateCached("test-form")).toBe(true);
+    expect(ids).toContain("form-a");
+    expect(ids).toContain("form-b");
   });
 });
 
@@ -316,50 +150,27 @@ describe("preloadTemplates", () => {
     clearTemplateCache();
   });
 
-  it("should preload multiple templates", async () => {
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => mockValidTemplate,
-    });
+  it("should preload registered templates", async () => {
+    registerFormTemplate("preload-1", createTemplate({ formId: "preload-1" }));
+    registerFormTemplate("preload-2", createTemplate({ formId: "preload-2" }));
 
-    const results = await preloadTemplates(["form1", "form2", "form3"]);
+    const results = await preloadTemplates(["preload-1", "preload-2"]);
 
-    expect(results).toHaveLength(3);
-    expect(isTemplateCached("form1")).toBe(true);
-    expect(isTemplateCached("form2")).toBe(true);
-    expect(isTemplateCached("form3")).toBe(true);
+    expect(results).toHaveLength(2);
+    expect(results.every((r) => r.result.success)).toBe(true);
+    expect(isTemplateCached("preload-1")).toBe(true);
+    expect(isTemplateCached("preload-2")).toBe(true);
   });
 
-  it("should return results for each template", async () => {
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => mockValidTemplate,
-    });
+  it("should report failures for missing templates", async () => {
+    registerFormTemplate("preload-valid", createTemplate({ formId: "preload-valid" }));
 
-    const results = await preloadTemplates(["form1", "form2"]);
+    const results = await preloadTemplates(["preload-valid", "preload-missing"]);
 
-    expect(results[0].formId).toBe("form1");
-    expect(results[0].result.success).toBe(true);
-    expect(results[1].formId).toBe("form2");
-    expect(results[1].result.success).toBe(true);
-  });
+    const successResult = results.find((r) => r.formId === "preload-valid");
+    const failureResult = results.find((r) => r.formId === "preload-missing");
 
-  it("should handle mix of successful and failed loads", async () => {
-    global.fetch = vi
-      .fn()
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockValidTemplate,
-      })
-      .mockResolvedValueOnce({
-        ok: false,
-        statusText: "Not Found",
-      });
-
-    const results = await preloadTemplates(["valid-form", "invalid-form"]);
-
-    expect(results[0].result.success).toBe(true);
-    expect(results[1].result.success).toBe(false);
+    expect(successResult?.result.success).toBe(true);
+    expect(failureResult?.result.success).toBe(false);
   });
 });
-

@@ -1,0 +1,51 @@
+{
+  "noticeType": "small_claims",
+  "caseNumber": "49K01-2510-SC-001236",
+  "court": {
+    "code": "K01",
+    "name": "Center Township Small Claims Court",
+    "county": "Marion County",
+    "state": "IN",
+    "address": "7201 E. 75th Street, Indianapolis, IN 46256",
+    "phone": "(317) 595-5000",
+    "hours": "Monday-Friday 8:00 AM - 4:30 PM"
+  },
+  "noticeDate": "2025-10-18",
+  "hearingDate": "2025-12-02",
+  "plaintiff": {
+    "name": "Robert Thompson",
+    "address": "888 Business Park Dr, Indianapolis, IN 46278"
+  },
+  "defendant": {
+    "name": "Elite Construction Services Inc",
+    "address": "999 Contractor Way, Indianapolis, IN 46203"
+  },
+  "claimAmount": "$4,750.00",
+  "claimType": "Breach of contract / Property damage",
+  "disputeDescription": "Defective home renovation work including improper electrical installation, water damage from faulty plumbing, and failure to complete contracted work",
+  "contractDate": "2025-07-15",
+  "workStartDate": "2025-07-20",
+  "workEndDate": "2025-08-30",
+  "discoveryDate": "2025-09-05",
+  "noticeDescription": "Small claims summons",
+  "glossaryTerms": ["small-claims", "plaintiff", "defendant", "service-of-process", "proof-of-service", "judgment", "breach-of-contract", "property-damage", "construction-defects"],
+  "timeline": {
+    "noticeGiven": "2025-10-18",
+    "responseDue": "2025-11-02",
+    "hearingScheduled": "2025-12-02"
+  },
+  "metadata": {
+    "source": "Marion County Civil Data Access Research",
+    "caseType": "small_claims",
+    "jurisdiction": "Marion County, IN - Center Township Small Claims Court",
+    "filingFee": "$86.00",
+    "serviceFee": "$28.00",
+    "maxClaimAmount": "$6000.00",
+    "statuteOfLimitations": "2 years (contracts)",
+    "disputeType": "construction",
+    "multipleIssues": true,
+    "damageTypes": ["electrical", "plumbing", "incomplete_work"],
+    "contractAmount": "$5,000.00",
+    "amountPaid": "$2,500.00"
+  }
+}

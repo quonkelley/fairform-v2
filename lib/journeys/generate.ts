@@ -41,12 +41,17 @@ export async function generateCaseJourney(
     for (let index = 0; index < template.length; index++) {
       const stepTemplate = template[index];
 
-      // Create step from template
+      // Create step from template with all journey data
       const step = await createStep({
         caseId,
         name: stepTemplate.title,
         order: index + 1, // 1-indexed
         dueDate: null, // No due date by default
+        description: stepTemplate.description,
+        stepType: stepTemplate.stepType,
+        instructions: stepTemplate.instructions,
+        estimatedTime: stepTemplate.estimatedTime,
+        disclaimer: stepTemplate.disclaimer,
       });
 
       steps.push(step);

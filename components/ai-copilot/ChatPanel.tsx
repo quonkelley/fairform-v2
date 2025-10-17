@@ -2,15 +2,28 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Send, Bot, User, Clock, AlertCircle, ArrowRight } from 'lucide-react';
+import { X, Send, Bot, User, Clock, AlertCircle, ArrowRight, Paperclip } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { CaseConfirmationCard } from './CaseConfirmationCard';
-import { SuggestionChips, type SuggestionChip } from './SuggestionChips';
+import { SuggestionChips } from './SuggestionChips';
 import { FormSession } from './FormSession';
+import { ProgressIndicator } from './ProgressIndicator';
+import { DocumentUpload } from './DocumentUpload';
+import { ExtractionResultCard } from './ExtractionResultCard';
 import { useAICopilot } from '@/lib/hooks/useAICopilot';
 import { useAuth } from '@/components/auth/auth-context';
+import { useLanguage } from '@/lib/hooks/useLanguage';
+import { useTranslations } from '@/lib/hooks/useTranslations';
+import { LanguageSelector } from '@/components/ui/language-selector';
+import { getSuggestionsForStage, shouldShowSuggestions } from '@/lib/ai/suggestionGenerator';
+import { FailureResponseCard } from './FailureResponseCard';
+import { useGracefulFailure } from '@/lib/hooks/useGracefulFailure';
+import type { ExtractionResult } from '@/lib/ai/documentExtraction';
 import type { Case } from '@/lib/db/types';
+import { FormSuccessCard } from '@/components/forms/FormSuccessCard';
+import type { FormCompletionResult } from './FormSession';
+import { useQueryClient } from '@tanstack/react-query';
 
 export type Message = {
   id: string;
@@ -43,6 +56,14 @@ export interface ChatPanelProps {
   sessionId?: string;
   caseId?: string;
   className?: string;
+}
+
+interface CompletedFormContext {
+  formId: string;
+  formTitle: string;
+  fields: Record<string, unknown>;
+  caseNumber?: string;
+  hearingDate?: Date | string | null;
 }
 
 // Animation variants for the panel
@@ -178,6 +199,8 @@ const renderMessageContent = (content: string) => {
 
 // Typing indicator component
 const TypingIndicator: React.FC = () => {
+  const { t } = useTranslations();
+  
   return (
     <motion.div
       variants={typingVariants}
@@ -204,7 +227,7 @@ const TypingIndicator: React.FC = () => {
           transition={{ duration: 1.5, repeat: Infinity, delay: 0.4 }}
         />
       </div>
-      <span className="text-sm text-gray-600">AI is typing...</span>
+      <span className="text-sm text-gray-600">{t('aiCopilot.typing')}</span>
     </motion.div>
   );
 };
@@ -340,14 +363,16 @@ const MessageBubble: React.FC<{ message: Message }> = ({ message }) => {
 
 // Connection status indicator
 const ConnectionStatusIndicator: React.FC<{ status: ConnectionStatus }> = ({ status }) => {
+  const { t } = useTranslations();
+  
   const getStatusInfo = () => {
     switch (status) {
       case 'connected':
-        return { color: 'text-green-500', label: 'Connected' };
+        return { color: 'text-green-500', label: t('aiCopilot.connected') };
       case 'connecting':
-        return { color: 'text-yellow-500', label: 'Connecting...' };
+        return { color: 'text-yellow-500', label: t('aiCopilot.connecting') };
       case 'disconnected':
-        return { color: 'text-red-500', label: 'Disconnected' };
+        return { color: 'text-red-500', label: t('aiCopilot.disconnected') };
       default:
         return { color: 'text-gray-500', label: 'Unknown' };
     }
@@ -371,11 +396,18 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
   className,
 }) => {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const { detectAndSetLanguage } = useLanguage();
+  const { t } = useTranslations();
+  const gracefulFailure = useGracefulFailure();
   const [inputValue, setInputValue] = useState('');
-  const [showSuggestionChips, setShowSuggestionChips] = useState(false);
   const [formSessionActive, setFormSessionActive] = useState(false);
   const [activeFormId, setActiveFormId] = useState<string | null>(null);
   const [caseData] = useState<Case | undefined>(undefined);
+  const [isProcessingDocument, setIsProcessingDocument] = useState(false);
+  const [extractionResult, setExtractionResult] = useState<ExtractionResult | null>(null);
+  const [showDocumentUpload, setShowDocumentUpload] = useState(false);
+  const [completedFormContext, setCompletedFormContext] = useState<CompletedFormContext | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -390,6 +422,8 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
     connectionStatus: aiConnectionStatus,
     error,
     isLoading,
+    conversationStage,
+    collectedInfo,
   } = useAICopilot({
     sessionId: initialSessionId,
     caseId,
@@ -505,41 +539,21 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
-  // Add proactive greeting with suggestion chips
   useEffect(() => {
-    if (isOpen && messages.length === 0 && !sessionStorage.getItem('ff_greeted')) {
-      setShowSuggestionChips(true);
-      sessionStorage.setItem('ff_greeted', '1');
+    if (formSessionActive) {
+      setCompletedFormContext(null);
     }
-  }, [isOpen, messages.length]);
+  }, [formSessionActive]);
 
-  // Suggestion chips data
-  const suggestionChips: SuggestionChip[] = [
-    {
-      id: 'eviction',
-      text: 'I got an eviction notice',
-      onClick: () => {
-        setInputValue('I got an eviction notice');
-        setShowSuggestionChips(false);
-      }
-    },
-    {
-      id: 'hearing',
-      text: 'My hearing is next week',
-      onClick: () => {
-        setInputValue('My hearing is next week');
-        setShowSuggestionChips(false);
-      }
-    },
-    {
-      id: 'appearance',
-      text: 'I need to file an appearance',
-      onClick: () => {
-        setInputValue('I need to file an appearance');
-        setShowSuggestionChips(false);
-      }
-    }
-  ];
+  // Get context-aware suggestion chips based on conversation state
+  const suggestions = getSuggestionsForStage(
+    conversationStage || 'GREET',
+    collectedInfo || {}
+  );
+  const showSuggestions = shouldShowSuggestions(
+    conversationStage || 'GREET',
+    collectedInfo || {}
+  );
 
   // Handle sending messages
   const handleSendMessage = async () => {
@@ -566,17 +580,124 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
 
     const messageContent = inputValue.trim();
     setInputValue('');
-    setShowSuggestionChips(false); // Hide chips on first user interaction
+
+    // Check for graceful failure test command
+    if (messageContent.toLowerCase().includes('test failure')) {
+        // Generate failure response for testing
+        gracefulFailure.generateFailureResponse(
+        messageContent,
+        messages.map(msg => ({
+          id: msg.id,
+          sessionId: sessionId || '',
+          author: msg.author,
+          content: msg.content,
+          createdAt: msg.timestamp,
+          meta: { status: 'sent' }
+        }))
+      );
+      return; // Don't send the actual message
+    }
 
     try {
+      // Story 13.35: Detect language from user message
+      await detectAndSetLanguage(messageContent);
+      
       console.log('📤 Calling sendMessage with:', messageContent);
       await sendMessage(messageContent);
       console.log('✅ sendMessage completed');
     } catch (error) {
       console.error('❌ Failed to send message:', error);
+      
+      // For now, we'll implement graceful failure as a manual trigger
+      // In a real implementation, this would be triggered by AI response analysis
+      // TODO: Integrate with AI response content analysis
     }
   };
 
+  const handleDownloadComplete = useCallback((
+    _info?: { downloadUrl: string; fileName: string }
+  ) => {
+    if (!caseId) {
+      return;
+    }
+
+    void queryClient.invalidateQueries({ queryKey: ["completedForms", caseId] });
+  }, [caseId, queryClient]);
+
+
+  // Handle document upload and extraction
+  const handleFileSelect = async (file: File) => {
+    if (!user) return;
+
+    setIsProcessingDocument(true);
+    setShowDocumentUpload(false);
+
+    try {
+      // Get auth token
+      const idToken = await user.getIdToken();
+
+      // Create FormData to send file
+      const formData = new FormData();
+      formData.append('file', file);
+
+      // Call extraction API
+      const response = await fetch('/api/ai/extract-document', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${idToken}`,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Extraction failed: ${response.status}`);
+      }
+
+      const result: ExtractionResult = await response.json();
+
+      if (result.success) {
+        setExtractionResult(result);
+      } else {
+        console.error('Extraction failed:', result.error);
+        await sendMessage(
+          `I tried to extract information from your document, but encountered an error: ${result.error || 'Unknown error'}. Please try uploading a clearer image or typing the information manually.`
+        );
+      }
+    } catch (error) {
+      console.error('Document processing error:', error);
+      await sendMessage(
+        'Sorry, I had trouble processing your document. Please try again or type the information manually.'
+      );
+    } finally {
+      setIsProcessingDocument(false);
+    }
+  };
+
+  // Handle extraction confirmation
+  const handleExtractionConfirm = async (data: Partial<ExtractionResult>) => {
+    setExtractionResult(null);
+
+    // Build a message summarizing the extracted data
+    const parts: string[] = [];
+    if (data.caseType) parts.push(`Case Type: ${data.caseType}`);
+    if (data.caseNumber) parts.push(`Case Number: ${data.caseNumber}`);
+    if (data.hearingDate) parts.push(`Hearing Date: ${data.hearingDate}`);
+    if (data.courtName) parts.push(`Court: ${data.courtName}`);
+    if (data.jurisdiction) parts.push(`Jurisdiction: ${data.jurisdiction}`);
+
+    const summary = parts.join('\n');
+    await sendMessage(
+      `I extracted the following information from your document:\n\n${summary}\n\nPlease confirm this is correct, and I'll help you create your case.`
+    );
+  };
+
+  // Handle extraction rejection
+  const handleExtractionReject = async () => {
+    setExtractionResult(null);
+    await sendMessage(
+      'No problem. Please tell me about your case, and I\'ll help you get started.'
+    );
+  };
 
   // Handle Enter key (send) vs Shift+Enter (new line)
   const handleKeyDown = (event: React.KeyboardEvent) => {
@@ -619,18 +740,21 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
               <Bot className="w-6 h-6 text-blue-600" />
               <div>
                 <h2 className="text-lg font-semibold text-gray-900">
-                  AI Copilot
+                  {t('aiCopilot.title')}
                 </h2>
                 <ConnectionStatusIndicator status={aiConnectionStatus} />
               </div>
             </div>
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-              aria-label="Close chat panel"
-            >
-              <X className="w-5 h-5 text-gray-500" />
-            </button>
+            <div className="flex items-center space-x-2">
+              <LanguageSelector variant="dropdown" showLabel={false} className="text-sm" />
+              <button
+                onClick={onClose}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                aria-label="Close chat panel"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
           </div>
 
           {/* Messages area or Form Session */}
@@ -640,16 +764,26 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                 formId={activeFormId}
                 caseId={caseId || ''}
                 caseData={caseData}
-                onComplete={async (formData) => {
-                  console.log('Form completed with data:', formData);
+                onComplete={async ({ fields, template }: FormCompletionResult) => {
                   setFormSessionActive(false);
-                  
-                  // Send completion message to chat
+
+                  const completedFormId = activeFormId ?? template?.formId ?? 'form';
+                  const resolvedTitle = template?.title || formatFormTitle(completedFormId);
+                  const caseNumberValue = extractCaseNumberFromFields(fields);
+                  const hearingDateValue = extractHearingDateFromFields(fields);
+
+                  setCompletedFormContext({
+                    formId: completedFormId,
+                    formTitle: resolvedTitle,
+                    fields,
+                    caseNumber: caseNumberValue,
+                    hearingDate: hearingDateValue,
+                  });
+
                   await sendMessage(
-                    `Form completed! The ${activeFormId} form has been filled out and is ready to download.`
+                    `Form completed! The ${resolvedTitle} form is ready. Use the download button above to get your PDF.`
                   );
-                  
-                  // Clear the active form
+
                   setActiveFormId(null);
                 }}
                 onCancel={() => {
@@ -660,21 +794,57 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
               />
             ) : (
               <>
+                {completedFormContext && caseId && (
+                  <FormSuccessCard
+                    formId={completedFormContext.formId}
+                    formTitle={completedFormContext.formTitle}
+                    caseId={caseId}
+                    fields={completedFormContext.fields}
+                    caseNumber={completedFormContext.caseNumber}
+                    hearingDate={completedFormContext.hearingDate ?? null}
+                    onDownloadComplete={handleDownloadComplete}
+                  />
+                )}
+
+                {/* Progress Indicator - show during gathering stages */}
+                {conversationStage &&
+                 (conversationStage === 'GREET' || conversationStage === 'GATHER_MIN') && (
+                  <ProgressIndicator
+                    collectedInfo={collectedInfo || {}}
+                    isVisible={true}
+                  />
+                )}
+
+                {/* Show extraction result card if available */}
+                {extractionResult && (
+                  <ExtractionResultCard
+                    result={extractionResult}
+                    onConfirm={handleExtractionConfirm}
+                    onReject={handleExtractionReject}
+                    className="mb-4"
+                  />
+                )}
+
+                {/* Show document upload UI if toggled */}
+                {showDocumentUpload && (
+                  <DocumentUpload
+                    onFileSelect={handleFileSelect}
+                    isProcessing={isProcessingDocument}
+                    disabled={isSending}
+                    className="mb-4"
+                  />
+                )}
+
                 {messages.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-full text-center">
                     <div>
                       <Bot className="w-12 h-12 text-gray-300 mx-auto mb-4" />
                       <h3 className="text-lg font-medium text-gray-900 mb-2">
-                        Welcome to AI Copilot
+                        {t('aiCopilot.welcome')}
                       </h3>
                       <p className="text-gray-500 mb-4">
-                        Hi! I&apos;m FairForm. Tell me what happened or upload a photo of your court notice. I&apos;ll create your case and show next steps in under 2 minutes.
+                        {t('aiCopilot.welcomeMessage')}
                       </p>
-                      {showSuggestionChips && (
-                        <SuggestionChips 
-                          chips={suggestionChips}
-                        />
-                      )}
                     </div>
                   </div>
                 ) : (
@@ -682,15 +852,32 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                     {messages.map((message) => (
                       <MessageBubble key={message.id} message={message} />
                     ))}
-                    {showSuggestionChips && (
-                      <SuggestionChips 
-                        chips={suggestionChips}
-                      />
-                    )}
                   </>
                 )}
-                
+
                 {isSending && <TypingIndicator />}
+                
+                {/* Graceful Failure Response */}
+                {gracefulFailure.currentFailureResponse && (
+                  <div className="mt-4">
+                    <FailureResponseCard
+                      response={gracefulFailure.currentFailureResponse}
+                      onOptionSelect={gracefulFailure.handleFailureOption}
+                    />
+                  </div>
+                )}
+                {isProcessingDocument && (
+                  <motion.div
+                    variants={typingVariants}
+                    initial="hidden"
+                    animate="visible"
+                    exit="exit"
+                    className="flex items-center space-x-2 p-4 bg-blue-50 rounded-lg max-w-xs"
+                  >
+                    <Bot className="w-5 h-5 text-blue-600" />
+                    <span className="text-sm text-blue-600">{t('aiCopilot.processingDocument')}</span>
+                  </motion.div>
+                )}
                 <div ref={messagesEndRef} />
               </>
             )}
@@ -699,14 +886,40 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
           {/* Input area - hide when form session is active */}
           {!formSessionActive && (
             <div className="border-t border-gray-200 p-4">
-              <div className="flex items-end space-x-2">
+              {/* Context-aware suggestion chips */}
+              {showSuggestions && suggestions.length > 0 && (
+                <SuggestionChips
+                  chips={suggestions}
+                  onSelect={async (value: string) => {
+                    // Send the suggested message
+                    await sendMessage(value);
+                  }}
+                  maxVisible={5}
+                />
+              )}
+
+              <div className="flex items-end space-x-2 mt-2">
+                <button
+                  onClick={() => setShowDocumentUpload(!showDocumentUpload)}
+                  disabled={isSending || isProcessingDocument}
+                  className={cn(
+                    'p-2 border border-gray-300 rounded-lg transition-colors',
+                    showDocumentUpload
+                      ? 'bg-blue-50 text-blue-600 border-blue-300'
+                      : 'bg-white text-gray-600 hover:bg-gray-50'
+                  )}
+                  aria-label={t('aiCopilot.uploadDocument')}
+                  title={t('aiCopilot.uploadDocument')}
+                >
+                  <Paperclip className="w-5 h-5" />
+                </button>
                 <div className="flex-1">
                   <textarea
                   ref={inputRef}
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder="Type your message... (Enter to send, Shift+Enter for new line)"
+                  placeholder={t('aiCopilot.placeholder')}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   rows={1}
                   disabled={isSending}
@@ -723,7 +936,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                 }}
                 disabled={!inputValue.trim() || isSending}
                 className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                aria-label="Send message"
+                aria-label={t('aiCopilot.sendMessage')}
               >
                 <Send className="w-5 h-5" />
               </button>
@@ -740,3 +953,78 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
 };
 
 export default ChatPanel;
+
+function formatFormTitle(identifier: string): string {
+  return identifier
+    .replace(/[-_]/g, ' ')
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function extractCaseNumberFromFields(fields: Record<string, unknown>): string | undefined {
+  const candidateKeys = [
+    'case_number',
+    'caseNumber',
+    'case_num',
+    'caseNum',
+    'CaseNumber',
+  ];
+
+  for (const key of candidateKeys) {
+    const value = fields[key];
+    if (typeof value === 'string' && value.trim().length > 0) {
+      return value;
+    }
+  }
+
+  return undefined;
+}
+
+function extractHearingDateFromFields(fields: Record<string, unknown>): Date | null {
+  const candidateKeys = [
+    'hearing_date',
+    'hearingDate',
+    'next_hearing_date',
+    'nextHearingDate',
+  ];
+
+  for (const key of candidateKeys) {
+    const value = fields[key];
+    const asDate = coerceDate(value);
+    if (asDate) {
+      return asDate;
+    }
+  }
+
+  return null;
+}
+
+function coerceDate(value: unknown): Date | null {
+  if (!value) {
+    return null;
+  }
+
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value;
+  }
+
+  if (typeof value === 'string') {
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+
+  if (
+    typeof value === 'object' &&
+    value !== null &&
+    'toDate' in value &&
+    typeof (value as { toDate: unknown }).toDate === 'function'
+  ) {
+    try {
+      const derived = (value as { toDate: () => Date }).toDate();
+      return Number.isNaN(derived.getTime()) ? null : derived;
+    } catch {
+      return null;
+    }
+  }
+
+  return null;
+}

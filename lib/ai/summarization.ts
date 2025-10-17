@@ -17,10 +17,17 @@ const SUMMARIZATION_THRESHOLD_MESSAGES = 50; // Trigger at 50 messages
 const SUMMARIZATION_THRESHOLD_TOKENS = 8000; // Trigger at 8000 tokens
 const MAX_SUMMARY_TOKENS = 1000; // Limit summary generation
 
-// Initialize OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Lazy initialization of OpenAI client
+let openai: OpenAI | null = null;
+
+function getOpenAIClient(): OpenAI | null {
+  if (!openai && process.env.OPENAI_API_KEY) {
+    openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+  }
+  return openai;
+}
 
 /**
  * Conversation summary structure
@@ -154,8 +161,27 @@ Focus on:
 
 Keep the summary concise but comprehensive.`;
 
+  const client = getOpenAIClient();
+  if (!client) {
+    console.warn('OpenAI API key not configured, returning basic summary');
+    return {
+      topics: ['conversation'],
+      decisions: [],
+      userPreferences: {
+        tone: 'unknown',
+        complexity: 'unknown',
+        focus: 'unknown'
+      },
+      legalGuidance: [],
+      summaryText: 'Summary unavailable - OpenAI API key not configured',
+      keyOutcomes: [],
+      messageCount: messages.length,
+      createdAt: Date.now()
+    };
+  }
+
   try {
-    const response = await openai.chat.completions.create({
+    const response = await client.chat.completions.create({
       model: 'gpt-4o-mini',
       messages: [
         {

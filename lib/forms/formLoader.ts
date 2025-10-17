@@ -4,9 +4,15 @@
  */
 
 import type { FormTemplate, Result } from "./types";
+import marionAppearance from "./marion/appearance.json";
 
 // In-memory cache for loaded templates
 const templateCache = new Map<string, FormTemplate>();
+const runtimeTemplates = new Map<string, FormTemplate>();
+
+const builtInTemplates: Record<string, FormTemplate> = {
+  "marion-appearance": marionAppearance as FormTemplate,
+};
 
 /**
  * Load a form template by ID
@@ -19,38 +25,26 @@ export async function loadFormTemplate(
 ): Promise<Result<FormTemplate>> {
   // Check cache first
   if (templateCache.has(formId)) {
-    console.log(`Loading form template "${formId}" from cache`);
     return { success: true, data: templateCache.get(formId)! };
   }
 
   try {
-    // Construct path to template JSON
-    const templatePath = getTemplatePath(formId);
-
-    // Load template file
-    const response = await fetch(templatePath);
-    if (!response.ok) {
+    const template = await resolveTemplate(formId);
+    if (!template) {
       return {
         success: false,
-        error: `Failed to load form template "${formId}": ${response.statusText}`,
+        error: `Form template "${formId}" not found. Ensure it is registered with loadFormTemplate.`,
       };
     }
 
-    const templateData = await response.json();
-
-    // Validate template structure
-    const validationResult = validateTemplateStructure(templateData);
+    const validationResult = validateTemplateStructure(template);
     if (!validationResult.success) {
       return validationResult;
     }
 
-    const template = templateData as FormTemplate;
+    templateCache.set(formId, validationResult.data);
 
-    // Cache the template
-    templateCache.set(formId, template);
-    console.log(`Loaded and cached form template "${formId}"`);
-
-    return { success: true, data: template };
+    return { success: true, data: validationResult.data };
   } catch (error) {
     return {
       success: false,
@@ -175,7 +169,7 @@ function validateTemplateStructure(data: unknown): Result<FormTemplate> {
  */
 export function clearTemplateCache(): void {
   templateCache.clear();
-  console.log("Template cache cleared");
+  runtimeTemplates.clear();
 }
 
 /**
@@ -204,11 +198,6 @@ export async function preloadTemplates(
     }))
   );
 
-  const successCount = results.filter((r) => r.result.success).length;
-  console.log(
-    `Preloaded ${successCount}/${formIds.length} form templates`
-  );
-
   return results;
 }
 
@@ -222,3 +211,50 @@ export function isTemplateCached(formId: string): boolean {
   return templateCache.has(formId);
 }
 
+/**
+ * Register a template at runtime (primarily for tests or dynamic forms)
+ *
+ * @param formId - Template identifier
+ * @param template - Template definition object
+ */
+export function registerFormTemplate(
+  formId: string,
+  template: FormTemplate
+): void {
+  runtimeTemplates.set(formId, template);
+  templateCache.delete(formId);
+}
+
+async function resolveTemplate(formId: string): Promise<FormTemplate | null> {
+  if (runtimeTemplates.has(formId)) {
+    return cloneTemplate(runtimeTemplates.get(formId)!);
+  }
+
+  if (builtInTemplates[formId]) {
+    return cloneTemplate(builtInTemplates[formId]);
+  }
+
+  const templatePath = getTemplatePath(formId);
+  if (typeof fetch === "function") {
+    try {
+      const response = await fetch(templatePath);
+      if (response.ok) {
+        const templateData = (await response.json()) as FormTemplate;
+        runtimeTemplates.set(formId, templateData);
+        return cloneTemplate(templateData);
+      }
+    } catch (error) {
+      // Ignore fetch errors and fall through
+    }
+  }
+
+  return null;
+}
+
+function cloneTemplate(template: FormTemplate): FormTemplate {
+  if (typeof structuredClone === "function") {
+    return structuredClone(template);
+  }
+
+  return JSON.parse(JSON.stringify(template)) as FormTemplate;
+}

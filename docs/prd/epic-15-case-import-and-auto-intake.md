@@ -34,6 +34,7 @@ Showcase how FairForm can transform a photographed eviction notice into a struct
 - **Scenario Sync:** Imported case replaces the default eviction scenario via `resetDemoStorage()` then `applyScenario(importedCase)`.
 - **Asset Packaging:** Demo includes notarized sample notice assets under `public/demo/import/`.
 - **Resilience States:** Import flow implements loading, success, error (bad scan) with graceful recovery; mirrored in tests.
+- **Marion County Authenticity:** Demo uses realistic Indiana case numbering system (49-K01-YYMM-EV-NNNNN), actual township court addresses, and authentic procedural timelines based on Marion County civil court research. Maintains demo simplicity with generic party names and addresses.
 
 ## ⚖️ Scope & Boundaries
 
@@ -63,9 +64,10 @@ Showcase how FairForm can transform a photographed eviction notice into a struct
 ## 📚 Stories
 
 ### Story 15.1 – Import Parser & Fixtures
-- Create Marion County eviction notice JSON fixture with structured fields and glossary hooks.
+- Create Marion County eviction notice JSON fixture with structured fields following Indiana Uniform Case Numbering System and actual township court data.
+- Include realistic timelines based on Marion County eviction procedures (10-day notice, 5-day response, 2-3 week hearing).
 - Implement `parseDemoNotice(fileName)` returning typed data or error.
-- Acceptance: parser unit tests cover happy path + mismatch + corrupt file; fixtures store demo metadata references.
+- Acceptance: parser unit tests cover happy path + mismatch + corrupt file; fixtures use authentic case numbers and court codes.
 
 ### Story 15.2 – Case Import Card & Pipeline
 - Build upload UI with drag/drop, progress indicator, and error fallback.

@@ -1,0 +1,41 @@
+{
+  "noticeType": "eviction",
+  "caseNumber": "49K02-2510-EV-001234",
+  "court": {
+    "code": "K02",
+    "name": "Downtown Township Small Claims Court",
+    "county": "Marion County",
+    "state": "IN",
+    "address": "200 E. Washington Street, Indianapolis, IN 46204",
+    "phone": "(317) 327-4000",
+    "hours": "Monday-Friday 8:00 AM - 4:30 PM"
+  },
+  "noticeDate": "2025-10-08",
+  "hearingDate": "2025-11-04",
+  "plaintiff": {
+    "name": "Downtown Apartments LLC",
+    "address": "100 Main Street, Indianapolis, IN 46204"
+  },
+  "defendant": {
+    "name": "Jennifer Martinez",
+    "address": "555 Market Street, Indianapolis, IN 46204"
+  },
+  "propertyAddress": "555 Market Street, Indianapolis, IN 46204",
+  "rentOwed": "$1,800.00",
+  "noticeDescription": "30-day notice to quit",
+  "glossaryTerms": ["eviction-notice", "answer", "default-judgment", "habitability", "retaliation", "stay-of-execution"],
+  "timeline": {
+    "noticeGiven": "2025-10-08",
+    "responseDue": "2025-10-18",
+    "hearingScheduled": "2025-11-04"
+  },
+  "metadata": {
+    "source": "Marion County Civil Data Access Research",
+    "caseType": "eviction",
+    "jurisdiction": "Marion County, IN - Downtown Township Small Claims Court",
+    "filingFee": "$86.00",
+    "serviceFee": "$28.00",
+    "noticeType": "30-day",
+    "reason": "lease_violation"
+  }
+}

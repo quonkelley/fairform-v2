@@ -1,0 +1,44 @@
+{
+  "noticeType": "small_claims",
+  "caseNumber": "49K01-2510-SC-001234",
+  "court": {
+    "code": "K01",
+    "name": "Center Township Small Claims Court",
+    "county": "Marion County",
+    "state": "IN",
+    "address": "7201 E. 75th Street, Indianapolis, IN 46256",
+    "phone": "(317) 595-5000",
+    "hours": "Monday-Friday 8:00 AM - 4:30 PM"
+  },
+  "noticeDate": "2025-10-10",
+  "hearingDate": "2025-11-20",
+  "plaintiff": {
+    "name": "Sarah Johnson",
+    "address": "321 Maple Drive, Indianapolis, IN 46208"
+  },
+  "defendant": {
+    "name": "Premier Auto Repair LLC",
+    "address": "654 Service Road, Indianapolis, IN 46203"
+  },
+  "claimAmount": "$1,850.00",
+  "claimType": "Property damage / Breach of contract",
+  "disputeDescription": "Defective auto repair work resulting in engine damage",
+  "originalServiceDate": "2025-09-15",
+  "discoveryDate": "2025-09-20",
+  "noticeDescription": "Small claims summons",
+  "glossaryTerms": ["small-claims", "plaintiff", "defendant", "service-of-process", "proof-of-service", "judgment", "security-deposit"],
+  "timeline": {
+    "noticeGiven": "2025-10-10",
+    "responseDue": "2025-10-25",
+    "hearingScheduled": "2025-11-20"
+  },
+  "metadata": {
+    "source": "Marion County Civil Data Access Research",
+    "caseType": "small_claims",
+    "jurisdiction": "Marion County, IN - Center Township Small Claims Court",
+    "filingFee": "$86.00",
+    "serviceFee": "$28.00",
+    "maxClaimAmount": "$6000.00",
+    "statuteOfLimitations": "2 years (contracts)"
+  }
+}

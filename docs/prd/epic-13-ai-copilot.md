@@ -196,8 +196,8 @@ User → Chat Interface → AI Middleware (context broker) → Firestore
 
 | Epic | Relationship |
 | ----- | ----- |
-| **Epic 12 – AI Intake** | Provides foundational Q\&A logic and form-mapping engine. Copilot extends it into a persistent assistant. |
-| **Epic 7 – Glossary System** | Integrated inline term definitions into AI responses. |
+| **Epic 12 – AI Intake** | Provides foundational Q\&A logic and form-mapping engine. Copilot extends it into a persistent assistant. (updated to ai chatbot intake - no more single page) |
+| **Epic 7 – Glossary System** | Integrated inline term definitions into AI responses. (pushed back to later) |
 | **Epic 8 – Step Details** | Copilot can explain or summarize steps dynamically. |
 | **Epic 9 – Reminder System** | Future Copilot expansion will manage reminders conversationally. |
 | **Epic 10–11** | Uses Settings for personalization (tone, delivery mode). |

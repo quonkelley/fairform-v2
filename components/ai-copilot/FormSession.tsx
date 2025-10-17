@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -8,13 +8,19 @@ import { FormProgressBar } from '@/components/forms/FormProgressBar';
 import { FormFieldInput } from '@/components/forms/FormFieldInput';
 import { useFormSession } from '@/lib/hooks/useFormSession';
 import type { Case } from '@/lib/db/types';
+import type { FormTemplate } from '@/lib/forms/types';
 
 interface FormSessionProps {
   formId: string;
   caseId: string;
   caseData?: Case;
-  onComplete: (formData: Record<string, unknown>) => void;
+  onComplete: (result: FormCompletionResult) => void;
   onCancel: () => void;
+}
+
+export interface FormCompletionResult {
+  fields: Record<string, unknown>;
+  template: FormTemplate | null;
 }
 
 export function FormSession({ 
@@ -23,6 +29,7 @@ export function FormSession({
   onComplete, 
   onCancel 
 }: FormSessionProps) {
+  const hasCompletedRef = useRef(false);
   const {
     currentField,
     progress,
@@ -33,23 +40,43 @@ export function FormSession({
     isComplete,
     isLoading,
     error,
-    validationError
+    validationError,
+    template
   } = useFormSession(formId, caseData);
 
   // Handle completion
   useEffect(() => {
-    if (isComplete && fieldValues && Object.keys(fieldValues).length > 0) {
-      // Check if we've already called onComplete for this field set
-      const allFieldsCompleted = currentField && fieldValues[currentField.id] !== undefined;
-      if (allFieldsCompleted) {
-        // Small delay to show the last field before completing
-        const timer = setTimeout(() => {
-          onComplete(fieldValues);
-        }, 500);
-        return () => clearTimeout(timer);
-      }
+    if (!isComplete) {
+      hasCompletedRef.current = false;
+      return;
     }
-  }, [isComplete, fieldValues, currentField, onComplete]);
+
+    if (hasCompletedRef.current) {
+      return;
+    }
+
+    const hasValue =
+      currentField?.required
+        ? currentField.type === 'checkbox'
+          ? fieldValues[currentField.id] === true
+          : Boolean(fieldValues[currentField.id])
+        : true;
+
+    if (!hasValue) {
+      return;
+    }
+
+    hasCompletedRef.current = true;
+
+    const timer = setTimeout(() => {
+      onComplete({
+        fields: fieldValues,
+        template,
+      });
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [isComplete, fieldValues, currentField, onComplete, template]);
 
   // Handle keyboard shortcuts
   useEffect(() => {

@@ -1,0 +1,67 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`parseDemoNotice > Snapshot Tests > should match snapshot for error result 1`] = `
+{
+  "code": "UNKNOWN_FILE",
+  "error": "Notice file 'unknown.notice.json' not found",
+  "success": false,
+}
+`;
+
+exports[`parseDemoNotice > Snapshot Tests > should match snapshot for successful parsing result 1`] = `
+{
+  "case": {
+    "caseNumber": "49K01-2510-EV-001234",
+    "caseType": "eviction",
+    "courtInfo": {
+      "address": "7201 E. 75th Street, Indianapolis, IN 46256",
+      "code": "K01",
+      "hours": "Monday-Friday 8:00 AM - 4:30 PM",
+      "name": "Center Township Small Claims Court",
+      "phone": "(317) 595-5000",
+    },
+    "jurisdiction": "Marion County, IN - Center Township Small Claims Court",
+    "notes": "Case created from uploaded eviction notice.
+
+**Eviction Details:**
+- Notice Type: 10-day notice to pay or quit
+- Date Received: 2025-10-10
+- Location: 1234 E. 38th Street, Indianapolis, IN 46205
+- Court: Center Township Small Claims Court
+- Case Number: 49K01-2510-EV-001234
+
+**Parties:**
+- Plaintiff: ABC Property Management LLC
+- Defendant: Alex Rodriguez
+
+**Financial:**
+- Rent Owed: $1,200.00
+- Filing Fee: $86.00
+- Service Fee: $28.00",
+    "noticeDescription": "10-day notice to pay or quit",
+    "parties": {
+      "defendant": "Alex Rodriguez",
+      "plaintiff": "ABC Property Management LLC",
+    },
+    "propertyAddress": "1234 E. 38th Street, Indianapolis, IN 46205",
+    "rentOwed": "$1,200.00",
+    "title": "Eviction Defense - Marion County",
+  },
+  "glossaryKeys": [
+    "eviction-notice",
+    "answer",
+    "default-judgment",
+    "habitability",
+  ],
+  "metadata": {
+    "filingFee": "$86.00",
+    "serviceFee": "$28.00",
+    "source": "Marion County Civil Data Access Research",
+  },
+  "timeline": {
+    "hearingDate": 2025-11-06T00:00:00.000Z,
+    "noticeDate": 2025-10-10T00:00:00.000Z,
+    "responseDueDate": 2025-10-20T00:00:00.000Z,
+  },
+}
+`;

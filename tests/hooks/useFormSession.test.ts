@@ -1,4 +1,5 @@
 import { renderHook, act } from '@testing-library/react';
+import { vi, MockedFunction } from 'vitest';
 import { useFormSession } from '@/lib/hooks/useFormSession';
 import { loadFormTemplate } from '@/lib/forms/formLoader';
 import { prefillFromCase } from '@/lib/forms/prefillData';
@@ -6,11 +7,11 @@ import type { FormTemplate } from '@/lib/forms/types';
 import type { Case } from '@/lib/db/types';
 
 // Mock the form loader and prefill functions
-jest.mock('@/lib/forms/formLoader');
-jest.mock('@/lib/forms/prefillData');
+vi.mock('@/lib/forms/formLoader');
+vi.mock('@/lib/forms/prefillData');
 
-const mockLoadFormTemplate = loadFormTemplate as jest.MockedFunction<typeof loadFormTemplate>;
-const mockPrefillFromCase = prefillFromCase as jest.MockedFunction<typeof prefillFromCase>;
+const mockLoadFormTemplate = loadFormTemplate as MockedFunction<typeof loadFormTemplate>;
+const mockPrefillFromCase = prefillFromCase as MockedFunction<typeof prefillFromCase>;
 
 describe('useFormSession', () => {
   const mockTemplate: FormTemplate = {
@@ -69,7 +70,7 @@ describe('useFormSession', () => {
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     mockLoadFormTemplate.mockResolvedValue({
       success: true,
       data: mockTemplate

@@ -1,0 +1,46 @@
+{
+  "noticeType": "small_claims",
+  "caseNumber": "49K01-2510-SC-001235",
+  "court": {
+    "code": "K01",
+    "name": "Center Township Small Claims Court",
+    "county": "Marion County",
+    "state": "IN",
+    "address": "7201 E. 75th Street, Indianapolis, IN 46256",
+    "phone": "(317) 595-5000",
+    "hours": "Monday-Friday 8:00 AM - 4:30 PM"
+  },
+  "noticeDate": "2025-10-15",
+  "hearingDate": "2025-11-25",
+  "plaintiff": {
+    "name": "Michael Chen",
+    "address": "456 Elm Street, Indianapolis, IN 46206"
+  },
+  "defendant": {
+    "name": "Downtown Properties LLC",
+    "address": "321 Landlord Lane, Indianapolis, IN 46202"
+  },
+  "claimAmount": "$2,400.00",
+  "claimType": "Security deposit dispute",
+  "disputeDescription": "Landlord failed to return security deposit within 45 days and provided no itemized list of deductions",
+  "moveOutDate": "2025-09-01",
+  "depositAmount": "$2,400.00",
+  "noticeDescription": "Small claims summons",
+  "glossaryTerms": ["small-claims", "plaintiff", "defendant", "service-of-process", "proof-of-service", "judgment", "security-deposit", "landlord-tenant"],
+  "timeline": {
+    "noticeGiven": "2025-10-15",
+    "responseDue": "2025-10-30",
+    "hearingScheduled": "2025-11-25"
+  },
+  "metadata": {
+    "source": "Marion County Civil Data Access Research",
+    "caseType": "small_claims",
+    "jurisdiction": "Marion County, IN - Center Township Small Claims Court",
+    "filingFee": "$86.00",
+    "serviceFee": "$28.00",
+    "maxClaimAmount": "$6000.00",
+    "statuteOfLimitations": "2 years (contracts)",
+    "disputeType": "security_deposit",
+    "landlordTenantDispute": true
+  }
+}

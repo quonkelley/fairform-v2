@@ -217,6 +217,24 @@ function mapCaseDocument(
         : null,
     createdAt: resolveTimestamp(data.createdAt),
     updatedAt: resolveTimestamp(data.updatedAt),
+    // Optional case-specific fields
+    caseNumber: typeof data.caseNumber === "string" && data.caseNumber.trim().length
+      ? data.caseNumber
+      : undefined,
+    court: typeof data.court === "string" && data.court.trim().length
+      ? data.court
+      : undefined,
+    plaintiff: typeof data.plaintiff === "string" && data.plaintiff.trim().length
+      ? data.plaintiff
+      : undefined,
+    defendant: typeof data.defendant === "string" && data.defendant.trim().length
+      ? data.defendant
+      : undefined,
+    propertyAddress: typeof data.propertyAddress === "string" && data.propertyAddress.trim().length
+      ? data.propertyAddress
+      : undefined,
+    filingDate: data.filingDate ? resolveTimestamp(data.filingDate) : undefined,
+    nextHearingDate: data.nextHearingDate ? resolveTimestamp(data.nextHearingDate) : undefined,
   };
 }
 

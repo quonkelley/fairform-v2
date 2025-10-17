@@ -36,8 +36,8 @@ Start here if you’re a developer (human or AI assistant in Cursor) joining the
 ### **Install & run**
 
 pnpm i  
-cp .env.example .env.local  
-\# fill in Firebase, Twilio, Resend, PostHog keys  
+node scripts/setup-env.js  # Creates .env.local with template values
+\# Edit .env.local and fill in your actual API keys  
 pnpm dev
 
 Local app: [http://localhost:3000](http://localhost:3000/)
@@ -70,6 +70,8 @@ TWILIO\_FROM\_NUMBER=
 
 NEXT\_PUBLIC\_POSTHOG\_KEY=  
 NEXT\_PUBLIC\_POSTHOG\_HOST=https://us.i.posthog.com
+
+OPENAI\_API\_KEY=  # Required for AI features (language detection, translation, etc.)
 
 NEXT\_PUBLIC\_APP\_ENV=staging
 

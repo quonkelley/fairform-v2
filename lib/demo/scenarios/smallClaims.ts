@@ -1,5 +1,6 @@
 import type { Case, CaseStep, Reminder } from '@/lib/db/types';
 import type { GlossaryTerm } from '@/lib/validation';
+import { createEnhancedStep } from '@/lib/journeys/stepMapper';
 
 /**
  * Complete small claims scenario for demo
@@ -32,51 +33,81 @@ export const smallClaimsScenario = {
   } satisfies Case,
 
   steps: [
-    {
-      id: 'demo-sc-step-1',
-      caseId: 'DEMO-SMALLCLAIMS-001',
-      name: 'File Your Claim',
-      order: 1,
-      dueDate: new Date(Date.now() + 3 * 86400000), // 3 days from now
+    createEnhancedStep('DEMO-SMALLCLAIMS-001', 1, 'File Your Claim', 'form', {
+      description: 'Complete and file your small claims complaint with the court',
+      instructions: [
+        'Fill out the small claims complaint form completely and accurately',
+        'Include all relevant details about your dispute and the amount you\'re claiming',
+        'Pay the required filing fee (usually $50-100) or request a fee waiver if eligible',
+        'File the complaint with the appropriate court clerk',
+        'Keep copies of all filed documents and get a case number',
+      ],
+      estimatedTime: 90,
+      disclaimer: 'This is general information, not legal advice. Filing requirements vary by court - check with the clerk.',
+      dueDateOffset: 3, // 3 days from now
       isComplete: false,
       completedAt: null,
-    },
-    {
-      id: 'demo-sc-step-2',
-      caseId: 'DEMO-SMALLCLAIMS-001',
-      name: 'Serve the Defendant',
-      order: 2,
-      dueDate: new Date(Date.now() + 10 * 86400000), // 10 days from now
+    }),
+    createEnhancedStep('DEMO-SMALLCLAIMS-001', 2, 'Serve the Defendant', 'document', {
+      description: 'Legally notify the defendant about your lawsuit',
+      instructions: [
+        'Use proper service methods (certified mail, sheriff, or process server)',
+        'Ensure service is completed within the required timeframe',
+        'File proof of service with the court',
+        'Keep records of all service attempts and responses',
+        'Note: Improper service can delay or dismiss your case',
+      ],
+      estimatedTime: 60,
+      disclaimer: 'This is general information, not legal advice. Service requirements are strict - follow court rules exactly.',
+      dueDateOffset: 10, // 10 days from now
       isComplete: false,
       completedAt: null,
-    },
-    {
-      id: 'demo-sc-step-3',
-      caseId: 'DEMO-SMALLCLAIMS-001',
-      name: 'Prepare for Hearing',
-      order: 3,
-      dueDate: new Date(Date.now() + 25 * 86400000), // ~3.5 weeks from now
+    }),
+    createEnhancedStep('DEMO-SMALLCLAIMS-001', 3, 'Prepare for Hearing', 'review', {
+      description: 'Gather evidence and prepare your case for court',
+      instructions: [
+        'Organize all evidence including contracts, receipts, photos, and correspondence',
+        'Prepare a clear timeline of events and your argument',
+        'Practice explaining your case in simple, clear terms',
+        'Bring multiple copies of all documents for the judge and defendant',
+        'Consider what questions the judge might ask and prepare answers',
+      ],
+      estimatedTime: 120,
+      disclaimer: 'This is general information, not legal advice. Court preparation is important - consider consulting legal aid.',
+      dueDateOffset: 25, // ~3.5 weeks from now
       isComplete: false,
       completedAt: null,
-    },
-    {
-      id: 'demo-sc-step-4',
-      caseId: 'DEMO-SMALLCLAIMS-001',
-      name: 'Attend Court Hearing',
-      order: 4,
-      dueDate: new Date(Date.now() + 30 * 86400000), // ~1 month from now
+    }),
+    createEnhancedStep('DEMO-SMALLCLAIMS-001', 4, 'Attend Court Hearing', 'meeting', {
+      description: 'Present your case to the judge at the scheduled hearing',
+      instructions: [
+        'Arrive early and dress professionally for court',
+        'Present your evidence clearly and answer the judge\'s questions honestly',
+        'Be respectful to the judge and the defendant',
+        'Listen carefully to the defendant\'s response and be prepared to counter their arguments',
+        'Bring all relevant documents and any witnesses you have',
+      ],
+      estimatedTime: 60,
+      disclaimer: 'This is general information, not legal advice. Court procedures can be complex - consider legal representation.',
+      dueDateOffset: 30, // ~1 month from now
       isComplete: false,
       completedAt: null,
-    },
-    {
-      id: 'demo-sc-step-5',
-      caseId: 'DEMO-SMALLCLAIMS-001',
-      name: 'Collect Judgment',
-      order: 5,
-      dueDate: new Date(Date.now() + 45 * 86400000), // ~6 weeks from now
+    }),
+    createEnhancedStep('DEMO-SMALLCLAIMS-001', 5, 'Collect Judgment', 'submit', {
+      description: 'Enforce the court\'s decision if you win your case',
+      instructions: [
+        'Wait for the court\'s written judgment to be issued',
+        'If you won, understand your options for collecting the money',
+        'Consider wage garnishment, bank levies, or property liens if necessary',
+        'Keep records of all collection attempts and payments received',
+        'Contact the court if you need help enforcing the judgment',
+      ],
+      estimatedTime: 45,
+      disclaimer: 'This is general information, not legal advice. Collection procedures vary - seek help if needed.',
+      dueDateOffset: 45, // ~6 weeks from now
       isComplete: false,
       completedAt: null,
-    },
+    }),
   ] satisfies CaseStep[],
 
   glossaryTerms: {

@@ -34,6 +34,13 @@ export interface AIPromptContext {
     progressPct?: number;
     status?: string;
   };
+  currentStep?: {
+    name: string;
+    stepType?: string;
+    description?: string;
+    dueDate?: string;
+    estimatedTime?: string;
+  };
   conversation?: {
     summary: string;      // Last 10 messages summary
     messageCount: number;

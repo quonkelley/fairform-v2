@@ -89,6 +89,7 @@ export interface ContextSnapshot {
   userPrefs?: UserPreferences;
   conversationStage?: ConversationStage; // Track conversation stage for case creation flow
   collectedInfo?: MinimumCaseInfo; // Store collected case information
+  askedQuestions?: string[]; // Story 13.29: Track which questions have been asked
   hash: string; // SHA-256 hash for deduplication and caching
 }
 
@@ -223,4 +224,18 @@ export interface PaginatedMessages {
 export interface ModerationResult {
   flagged: boolean;
   categories?: Record<string, boolean>;
+}
+
+/**
+ * Extraction correction tracking (Story 13.32)
+ * Used for analytics and improving extraction accuracy
+ */
+export interface ExtractionCorrection {
+  field: string;
+  originalValue: string;
+  correctedValue: string;
+  confidence?: number;
+  timestamp: number;
+  userId: string;
+  sessionId: string;
 }

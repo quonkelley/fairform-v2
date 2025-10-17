@@ -74,7 +74,6 @@ Visual interaction blueprint and emotional arc:
 ### 📚 Product Requirements
 - **[prd/](./prd/)** - Product requirement documents (epics 1-18)
   - `epic-13-ai-copilot.md` - AI Copilot PRD ⭐ ACTIVE
-  - `epic-14-security-compliance.md` - Security & Compliance PRD (Deferred to post-demo)
   - `epic-15-case-import-and-auto-intake.md` - Case Import PRD ✨ NEW
   - `epic-16-deadline-engine.md` - Deadline Engine PRD ✨ NEW
   - `epic-17-hearing-day-mode.md` - Hearing Day Mode PRD ✨ NEW

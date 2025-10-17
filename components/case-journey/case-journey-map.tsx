@@ -7,9 +7,10 @@ import { StepNode } from "./step-node";
 
 export interface CaseJourneyMapProps {
   caseId: string;
+  onAskAI?: (message?: string) => void;
 }
 
-export function CaseJourneyMap({ caseId }: CaseJourneyMapProps) {
+export function CaseJourneyMap({ caseId, onAskAI }: CaseJourneyMapProps) {
   const { data: steps, isLoading, isError, error } = useCaseSteps(caseId);
 
   // Loading state
@@ -80,7 +81,7 @@ export function CaseJourneyMap({ caseId }: CaseJourneyMapProps) {
       aria-label="Case journey timeline"
       className="space-y-6"
     >
-      <div className="space-y-2">
+      <div className="space-y-1">
         <h2 className="text-2xl font-bold text-foreground">
           Your Case Journey
         </h2>
@@ -89,7 +90,7 @@ export function CaseJourneyMap({ caseId }: CaseJourneyMapProps) {
         </p>
       </div>
 
-      <ol className="flex flex-col gap-4 md:gap-6">
+      <ol className="flex flex-col gap-3">
         {steps.map((step) => {
           // Find index among incomplete steps to determine if this is "current"
           const incompleteSteps = steps.filter((s) => !s.isComplete);
@@ -101,6 +102,7 @@ export function CaseJourneyMap({ caseId }: CaseJourneyMapProps) {
                 step={step}
                 index={incompleteIndex}
                 totalSteps={steps.length}
+                onAskAI={onAskAI}
               />
             </li>
           );

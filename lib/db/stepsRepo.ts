@@ -53,6 +53,12 @@ export async function createStep(input: CreateCaseStepInput): Promise<CaseStep> 
       dueDate: input.dueDate ? FieldValue.serverTimestamp() : null,
       isComplete: false,
       completedAt: null,
+      // Journey template fields
+      description: input.description || null,
+      stepType: input.stepType || null,
+      instructions: input.instructions || [],
+      estimatedTime: input.estimatedTime || null,
+      disclaimer: input.disclaimer || null,
     });
 
     const persistedSnapshot = await docRef.get();
@@ -67,6 +73,11 @@ export async function createStep(input: CreateCaseStepInput): Promise<CaseStep> 
         dueDate: input.dueDate || null,
         isComplete: false,
         completedAt: null,
+        description: input.description,
+        stepType: input.stepType,
+        instructions: input.instructions,
+        estimatedTime: input.estimatedTime,
+        disclaimer: input.disclaimer,
       };
     }
 
@@ -142,6 +153,12 @@ function mapStepDocument(snapshot: DocumentSnapshot<DocumentData>): CaseStep {
     dueDate: resolveTimestamp(data.dueDate),
     isComplete: Boolean(data.isComplete),
     completedAt: resolveTimestamp(data.completedAt),
+    // Journey template fields
+    description: data.description ? String(data.description) : undefined,
+    stepType: data.stepType || undefined,
+    instructions: Array.isArray(data.instructions) ? data.instructions : undefined,
+    estimatedTime: typeof data.estimatedTime === 'number' ? data.estimatedTime : undefined,
+    disclaimer: data.disclaimer ? String(data.disclaimer) : undefined,
   };
 }
 

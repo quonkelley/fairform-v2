@@ -29,6 +29,37 @@ interface UseFormSessionReturn {
   isLoading: boolean;
   error?: string;
   validationError?: string;
+  template: FormTemplate | null;
+}
+function computeValidationError(field: FormField | undefined, value: FieldValue): string | undefined {
+  if (!field) {
+    return 'Field definition not found';
+  }
+
+  const hasValue =
+    value !== undefined &&
+    value !== null &&
+    (typeof value !== 'string' || value.trim().length > 0);
+
+  if (field.required) {
+    if (field.type === 'checkbox') {
+      if (value !== true) {
+        return `${field.label} is required`;
+      }
+    } else if (!hasValue) {
+      return `${field.label} is required`;
+    }
+  }
+
+  if (field.type === 'date' && hasValue) {
+    const date =
+      value instanceof Date ? value : new Date(value as string);
+    if (isNaN(date.getTime())) {
+      return 'Please enter a valid date';
+    }
+  }
+
+  return undefined;
 }
 
 export function useFormSession(
@@ -89,72 +120,67 @@ export function useFormSession(
     loadTemplate();
   }, [formId, caseData]);
 
-  // Validate current field
-  const validateCurrentField = useCallback((): boolean => {
-    if (!state.template) return false;
-    
-    const currentField = state.template.fields[state.currentFieldIndex];
-    if (!currentField) return false;
-
-    const value = state.fieldValues[currentField.id];
-
-    // Check required fields
-    if (currentField.required && !value) {
-      setState(prev => ({
-        ...prev,
-        validationError: `${currentField.label} is required`
-      }));
-      return false;
-    }
-
-    // Type-specific validation
-    if (currentField.type === 'date' && value) {
-      const date = value instanceof Date ? value : new Date(value as string);
-      if (isNaN(date.getTime())) {
-        setState(prev => ({
-          ...prev,
-          validationError: 'Please enter a valid date'
-        }));
-        return false;
-      }
-    }
-
-    // Clear validation error if valid
-    setState(prev => ({
-      ...prev,
-      validationError: undefined
-    }));
-    return true;
-  }, [state.template, state.currentFieldIndex, state.fieldValues]);
-
   // Navigate to next field
   const nextField = useCallback(() => {
-    if (!state.template) return;
+    setState(prev => {
+      if (!prev.template) {
+        return prev;
+      }
 
-    // Validate current field before advancing
-    if (!validateCurrentField()) {
-      return;
-    }
+      const fields = prev.template.fields;
+      const currentField = fields[prev.currentFieldIndex];
 
-    if (state.currentFieldIndex < state.template.fields.length - 1) {
-      setState(prev => ({
-        ...prev,
-        currentFieldIndex: prev.currentFieldIndex + 1,
-        validationError: undefined
-      }));
-    }
-  }, [state.template, state.currentFieldIndex, validateCurrentField]);
+      if (!currentField) {
+        return prev;
+      }
+
+      const value = prev.fieldValues[currentField.id];
+      const validationError = computeValidationError(currentField, value);
+
+      if (validationError) {
+        if (prev.validationError === validationError) {
+          return prev;
+        }
+
+        return {
+          ...prev,
+          validationError
+        };
+      }
+
+      if (prev.currentFieldIndex < fields.length - 1) {
+        return {
+          ...prev,
+          currentFieldIndex: prev.currentFieldIndex + 1,
+          validationError: undefined
+        };
+      }
+
+      if (prev.validationError !== undefined) {
+        return {
+          ...prev,
+          validationError: undefined
+        };
+      }
+
+      return prev;
+    });
+  }, []);
 
   // Navigate to previous field
   const previousField = useCallback(() => {
-    if (state.currentFieldIndex > 0) {
-      setState(prev => ({
+    setState(prev => {
+      if (prev.currentFieldIndex === 0) {
+        return prev;
+      }
+
+      return {
         ...prev,
         currentFieldIndex: prev.currentFieldIndex - 1,
         validationError: undefined
-      }));
-    }
-  }, [state.currentFieldIndex]);
+      };
+    });
+  }, []);
 
   // Set field value
   const setFieldValue = useCallback((fieldId: string, value: FieldValue) => {
@@ -189,10 +215,16 @@ export function useFormSession(
     current: state.currentFieldIndex + 1,
     total: state.template?.fields.length || 0
   };
-  const isComplete = state.template 
-    ? state.currentFieldIndex === state.template.fields.length - 1 
-      && validateCurrentField()
+
+  const isFinalField = Boolean(
+    state.template && state.currentFieldIndex === state.template.fields.length - 1
+  );
+
+  const isCurrentFieldValid = currentField
+    ? !computeValidationError(currentField, state.fieldValues[currentField.id])
     : false;
+
+  const isComplete = isFinalField && isCurrentFieldValid;
 
   return {
     currentField,
@@ -204,6 +236,7 @@ export function useFormSession(
     isComplete,
     isLoading: state.isLoading,
     error: state.error,
-    validationError: state.validationError
+    validationError: state.validationError,
+    template: state.template,
   };
 }

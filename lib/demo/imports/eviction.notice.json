@@ -1,0 +1,39 @@
+{
+  "noticeType": "eviction",
+  "caseNumber": "49K01-2510-EV-001234",
+  "court": {
+    "code": "K01",
+    "name": "Center Township Small Claims Court",
+    "county": "Marion County",
+    "state": "IN",
+    "address": "7201 E. 75th Street, Indianapolis, IN 46256",
+    "phone": "(317) 595-5000",
+    "hours": "Monday-Friday 8:00 AM - 4:30 PM"
+  },
+  "noticeDate": "2025-10-10",
+  "hearingDate": "2025-11-06",
+  "plaintiff": {
+    "name": "ABC Property Management LLC",
+    "address": "456 Business Blvd, Indianapolis, IN 46202"
+  },
+  "defendant": {
+    "name": "Alex Rodriguez",
+    "address": "1234 E. 38th Street, Indianapolis, IN 46205"
+  },
+  "propertyAddress": "1234 E. 38th Street, Indianapolis, IN 46205",
+  "rentOwed": "$1,200.00",
+  "noticeDescription": "10-day notice to pay or quit",
+  "glossaryTerms": ["eviction-notice", "answer", "default-judgment", "habitability"],
+  "timeline": {
+    "noticeGiven": "2025-10-10",
+    "responseDue": "2025-10-20",
+    "hearingScheduled": "2025-11-06"
+  },
+  "metadata": {
+    "source": "Marion County Civil Data Access Research",
+    "caseType": "eviction",
+    "jurisdiction": "Marion County, IN - Center Township Small Claims Court",
+    "filingFee": "$86.00",
+    "serviceFee": "$28.00"
+  }
+}
