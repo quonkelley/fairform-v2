@@ -182,6 +182,25 @@ export function buildAppStateContext(
     `has_case_type=${!!collectedInfo.caseType}`,
   ];
 
+  // Add detailed missing information context
+  const missingInfo = [];
+  if (!collectedInfo.caseType) {
+    missingInfo.push('case type (eviction, small claims, etc.)');
+  }
+  if (!collectedInfo.jurisdiction) {
+    missingInfo.push('jurisdiction (court location like "Marion County")');
+  }
+  if (!collectedInfo.caseNumber && !collectedInfo.hearingDate) {
+    missingInfo.push('either case number OR hearing date');
+  }
+
+  if (missingInfo.length > 0) {
+    lines.push(`missing_info="${missingInfo.join(', ')}"`);
+    lines.push(`ready_for_creation=false`);
+  } else {
+    lines.push(`ready_for_creation=true`);
+  }
+
   if (collectedInfo.jurisdiction) {
     lines.push(`jurisdiction_guess="${collectedInfo.jurisdiction}"`);
   }

@@ -46,9 +46,23 @@ export function useCreateCase(
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         console.error("[useCreateCase] Error response:", errorData);
-        throw new Error(
-          errorData.message || `Failed to create case: ${response.statusText}`
-        );
+        
+        // Create a more detailed error with validation details
+        let errorMessage = errorData.message || `Failed to create case: ${response.statusText}`;
+        
+        // If there are validation details, include them in the error message
+        if (errorData.details && Array.isArray(errorData.details)) {
+          const validationErrors = errorData.details.map((detail: any) => detail.message).join(', ');
+          errorMessage = `${errorMessage}. ${validationErrors}`;
+        }
+        
+        // Create a custom error with additional context
+        const error = new Error(errorMessage);
+        (error as any).status = response.status;
+        (error as any).details = errorData.details;
+        (error as any).requestId = errorData.requestId;
+        
+        throw error;
       }
 
       const data = await response.json();
