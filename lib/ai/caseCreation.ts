@@ -1,4 +1,5 @@
 import type { CreateCaseInput } from '@/lib/validation';
+import { createCaseWithJourney } from '@/lib/db/casesRepo';
 
 /**
  * Conversation state interface for case creation
@@ -259,48 +260,44 @@ export async function createCaseFromConversation(
     // Map conversation to case input
     const caseInput = mapConversationToCase(state, userId);
 
-    // Call the cases API
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-    const response = await fetch(`${baseUrl}/api/cases`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${idToken}`
-      },
-      body: JSON.stringify(caseInput)
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-
-      // Determine if error is retryable
-      const retryable = response.status >= 500 || response.status === 429;
-
-      return {
-        success: false,
-        error: {
-          code: response.status === 401 ? 'UNAUTHORIZED' : 'API_ERROR',
-          message: errorData.message || `Failed to create case: ${response.statusText}`,
-          retryable
-        }
-      };
-    }
-
-    const data = await response.json();
+    // Create case directly using the database function
+    // This avoids HTTP request issues and is more efficient
+    const caseRecord = await createCaseWithJourney(caseInput);
 
     return {
       success: true,
-      caseId: data.caseId
+      caseId: caseRecord.id
     };
   } catch (error) {
     console.error('Case creation error:', error);
 
+    // Determine if error is retryable based on error type
+    let retryable = true;
+    let errorCode = 'API_ERROR';
+    let errorMessage = 'Failed to create case';
+
+    if (error instanceof Error) {
+      errorMessage = error.message;
+      
+      // Check for specific error types
+      if (error.message.includes('permission') || error.message.includes('unauthorized')) {
+        errorCode = 'UNAUTHORIZED';
+        retryable = false;
+      } else if (error.message.includes('quota') || error.message.includes('limit')) {
+        errorCode = 'QUOTA_EXCEEDED';
+        retryable = false;
+      } else if (error.message.includes('validation') || error.message.includes('invalid')) {
+        errorCode = 'VALIDATION_ERROR';
+        retryable = false;
+      }
+    }
+
     return {
       success: false,
       error: {
-        code: 'NETWORK_ERROR',
-        message: error instanceof Error ? error.message : 'Network error occurred',
-        retryable: true
+        code: errorCode,
+        message: errorMessage,
+        retryable
       }
     };
   }

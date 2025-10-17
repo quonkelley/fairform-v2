@@ -224,7 +224,8 @@ export function buildAppStateContext(
 export function getNextStage(
   currentStage: ConversationStage,
   collectedInfo: Partial<MinimumCaseInfo>,
-  userMessage: string
+  userMessage: string,
+  caseCreationResult?: { success: boolean; caseId?: string; error?: { code: string; message: string; retryable: boolean } } | null
 ): ConversationStage {
   // If we have minimum info, advance to confirmation
   if (currentStage === 'GATHER_MIN' && hasMinimumInfo(collectedInfo)) {
@@ -277,6 +278,16 @@ export function getNextStage(
     if (hasConfirmation && !hasNegation) {
       return 'POST_CREATE_COACH';
     }
+  }
+
+  // Handle case creation failure - reset to CONFIRM_CREATE for retry
+  if (currentStage === 'POST_CREATE_COACH' && caseCreationResult && !caseCreationResult.success) {
+    // If the error is retryable, go back to confirmation stage
+    if (caseCreationResult.error?.retryable) {
+      return 'CONFIRM_CREATE';
+    }
+    // If not retryable, stay in POST_CREATE_COACH to show error message
+    return 'POST_CREATE_COACH';
   }
 
   // Default: stay in current stage or advance from greet

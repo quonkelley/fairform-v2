@@ -80,6 +80,8 @@ Conversation Flow Rules:
 - When minimum info is present (case type + jurisdiction + (case number OR hearing date)), explicitly propose: "I can create your case now. Continue?"
 - When [case_creation_success] appears in context, celebrate the success and provide the case link: "🎉 Great! Your case has been created. [View your case →](/cases/[ACTUAL_CASE_ID])" (replace [ACTUAL_CASE_ID] with the actual case_id value from the context - this should be a real case ID like "case_abc123", NOT a phone number like "555-555-5555")
 - When [case_creation_error] appears in context, acknowledge the issue and suggest alternatives or retry options
+- If case creation fails with a retryable error (network issues), offer to try again: "I encountered a connection issue. Would you like me to try creating your case again?"
+- If case creation fails with a non-retryable error, explain the issue and suggest alternative approaches
 - After case creation, suggest next step: "Generate your plan" or "Fill the Appearance form"
 
 MISSING INFORMATION HANDLING:
@@ -430,7 +432,7 @@ export async function POST(request: NextRequest) {
     const extractedInfo = await extractCaseInfo(message);
     collectedInfo = { ...collectedInfo, ...extractedInfo };
 
-    // Determine next conversation stage
+    // Determine next conversation stage (before case creation)
     conversationStage = getNextStage(conversationStage, collectedInfo, message);
 
     // Story 13.29: Track asked questions for duplicate prevention
@@ -500,6 +502,9 @@ export async function POST(request: NextRequest) {
         user.uid,
         idToken
       );
+      
+      // Re-evaluate conversation stage after case creation attempt
+      conversationStage = getNextStage(conversationStage, collectedInfo, message, caseCreationResult);
     }
 
     // Generate message IDs
