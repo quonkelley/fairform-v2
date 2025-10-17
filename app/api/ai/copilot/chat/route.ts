@@ -78,6 +78,7 @@ Priority Data Collection (ask for or extract these first):
 Conversation Flow Rules:
 - When user uploads a notice image, echo back the parsed case number for confirmation
 - When minimum info is present (case type + jurisdiction + (case number OR hearing date)), explicitly propose: "I can create your case now. Continue?"
+- When user confirms with "Continue", "Yes", "Create case", etc., proceed with case creation - DO NOT extract these as case numbers
 - When [case_creation_success] appears in context, celebrate the success and provide the case link: "🎉 Great! Your case has been created. [View your case →](/cases/[ACTUAL_CASE_ID])" (replace [ACTUAL_CASE_ID] with the actual case_id value from the context - this should be a real case ID like "case_abc123", NOT a phone number like "555-555-5555")
 - When [case_creation_error] appears in context, acknowledge the issue and suggest alternatives or retry options
 - If case creation fails with a retryable error (network issues), offer to try again: "I encountered a connection issue. Would you like me to try creating your case again?"
@@ -98,6 +99,8 @@ SMART FOLLOW-UP QUESTIONS (Story 13.29):
 - If the user doesn't know something, acknowledge gracefully: "That's okay, we can add that later"
 - Don't ask the same question twice - check the app_state context below for what's already collected
 - Ask follow-up questions ONE AT A TIME to maintain natural conversation flow
+
+CRITICAL: Do NOT extract case information from confirmation responses like "Continue", "Yes", "Create case", "OK", etc. These are user confirmations, not case data.
 
 DISAMBIGUATION PROTOCOL (Research-Based, Story 13.29):
 When input is ambiguous or unclear, NEVER guess - always ask a specific clarifying question:
@@ -429,8 +432,15 @@ export async function POST(request: NextRequest) {
     const detectedLanguage = await detectLanguage(message);
     
     // Extract case info from current message (Story 13.31: now async)
-    const extractedInfo = await extractCaseInfo(message);
-    collectedInfo = { ...collectedInfo, ...extractedInfo };
+    // Skip case extraction if we're in confirmation stage to avoid misinterpreting confirmations
+    let extractedInfo: Partial<MinimumCaseInfo> = {};
+    if (conversationStage !== 'CONFIRM_CREATE' && conversationStage !== 'POST_CREATE_COACH') {
+      extractedInfo = await extractCaseInfo(message);
+      collectedInfo = { ...collectedInfo, ...extractedInfo };
+    } else {
+      // In confirmation stages, preserve existing collected info
+      collectedInfo = { ...collectedInfo };
+    }
 
     // Determine next conversation stage (before case creation)
     conversationStage = getNextStage(conversationStage, collectedInfo, message);
